@@ -74,12 +74,15 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         year, month = manad_str.split('-')
         manad_num = int(year) * 100 + int(month)
 
-        base_path = r'C:\Users\ezzat.rajab.AD\claude-workspace\VGR Alla enheter'
+        # Sökväg som fungerar både lokalt och på Streamlit Cloud
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.join(script_dir, 'data')
 
         # Läs P&L Actual
-        df_actual = pd.read_excel(f'{base_path}\\{enhet_kst}\\P&L Actual.xlsx')
+        df_actual = pd.read_excel(os.path.join(base_path, enhet_kst, 'P&L Actual.xlsx'))
         # Läs P&L Budget
-        df_budget = pd.read_excel(f'{base_path}\\{enhet_kst}\\P&L Budget.xlsx')
+        df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, 'P&L Budget.xlsx'))
 
         # Hitta rad för Revenue Total (rad 3 i P&L-filerna)
         # CG Item = 'Revenue' och Unnamed: 3 (Account full Name) = NaN (första Revenue-raden)
@@ -134,7 +137,10 @@ def load_kpi_data():
     }
     """
     try:
-        kpi_path = r'C:\Users\ezzat.rajab.AD\claude-workspace\VGR Alla enheter\KPIer Storg-GBG.xlsx'
+        # Sökväg som fungerar både lokalt och på Streamlit Cloud
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        kpi_path = os.path.join(script_dir, 'data', 'KPIer Storg-GBG.xlsx')
         df = pd.read_excel(kpi_path, sheet_name='Data', header=None)
 
         # Hitta Rehab Poäng (rad 292)
