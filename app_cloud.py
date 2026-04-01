@@ -56,6 +56,138 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========================================
+# DATAINLÄSNING FRÅN EXCEL-FILER
+# ========================================
+
+@st.cache_data(ttl=3600)
+def load_rehab_intakter_from_pl(enhet_kst, manad_str):
+    """
+    Läser Rehab-intäkter (Revenue Total) från P&L Actual och P&L Budget filer.
+    Args:
+        enhet_kst: '601', '602', etc
+        manad_str: '2026-01', '2026-02', etc
+    Returns:
+        {'actual': value, 'budget': value}
+    """
+    try:
+        # Konvertera månad till nummer
+        year, month = manad_str.split('-')
+        manad_num = int(year) * 100 + int(month)
+
+        base_path = r'C:\Users\ezzat.rajab.AD\claude-workspace\VGR Alla enheter'
+
+        # Läs P&L Actual
+        df_actual = pd.read_excel(f'{base_path}\\{enhet_kst}\\P&L Actual.xlsx')
+        # Läs P&L Budget
+        df_budget = pd.read_excel(f'{base_path}\\{enhet_kst}\\P&L Budget.xlsx')
+
+        # Hitta rad för Revenue Total (rad 3 i P&L-filerna)
+        # CG Item = 'Revenue' och Unnamed: 3 (Account full Name) = NaN (första Revenue-raden)
+        revenue_row_actual = df_actual[(df_actual['CG Item'] == 'Revenue') & (df_actual['Unnamed: 3'].isna())]
+        revenue_row_budget = df_budget[(df_budget['CG Item'] == 'Revenue') & (df_budget['Unnamed: 3'].isna())]
+
+        if revenue_row_actual.empty or revenue_row_budget.empty:
+            return {'actual': 0, 'budget': 0}
+
+        # Ta första raden (rad 3 = Revenue Total)
+        revenue_row_actual = revenue_row_actual.iloc[0]
+        revenue_row_budget = revenue_row_budget.iloc[0]
+
+        # Hitta rätt kolumn baserat på månad
+        # Header row (rad 0) innehåller månaderna
+        period_cols = [col for col in df_actual.columns if 'Selected Period' in str(col)]
+
+        # Läs header row för att hitta rätt månad
+        header_row = df_actual.iloc[0]
+
+        col_idx = None
+        for col in period_cols:
+            val = header_row[col]
+            if pd.notna(val) and int(val) == manad_num:
+                col_idx = col
+                break
+
+        if col_idx is None:
+            return {'actual': 0, 'budget': 0}
+
+        actual_val = revenue_row_actual[col_idx]
+        budget_val = revenue_row_budget[col_idx]
+
+        return {
+            'actual': float(actual_val) if pd.notna(actual_val) else 0,
+            'budget': float(budget_val) if pd.notna(budget_val) else 0
+        }
+    except Exception as e:
+        # Visa inte fel i produktionen, bara returnera 0
+        print(f"Fel vid läsning av P&L för {enhet_kst}, månad {manad_str}: {e}")
+        return {'actual': 0, 'budget': 0}
+
+
+@st.cache_data(ttl=3600)
+def load_kpi_data():
+    """
+    Läser KPI-data från KPIer Storg-GBG.xlsx
+    Returns dictionary med struktur:
+    {
+        'rehab_poang': {enhet_vc_kst: {manad: värde}},
+        'teambesok': {enhet_rehab_kst: {manad: värde}}
+    }
+    """
+    try:
+        kpi_path = r'C:\Users\ezzat.rajab.AD\claude-workspace\VGR Alla enheter\KPIer Storg-GBG.xlsx'
+        df = pd.read_excel(kpi_path, sheet_name='Data', header=None)
+
+        # Hitta Rehab Poäng (rad 292)
+        rehab_poang_header_idx = 292
+        teambesok_header_idx = 304
+
+        # Skapa mapping från kolumn till månad
+        header_row = df.iloc[rehab_poang_header_idx, :].tolist()
+        col_to_month = {}
+        for i, val in enumerate(header_row):
+            if pd.notna(val) and str(val).replace('.0', '').isdigit():
+                month_num = int(val)
+                if month_num >= 202601:  # Bara 2026 och framåt
+                    year = month_num // 100
+                    month = month_num % 100
+                    col_to_month[i] = f'{year}-{month:02d}'
+
+        # Läs Rehab Poäng (rad 293-300: Frölunda Torg=102, Grimmered=103, etc)
+        rehab_poang = {}
+        for row_idx in range(293, 301):
+            row_data = df.iloc[row_idx, :].tolist()
+            enhet_namn = row_data[0]
+            enhet_kst = str(int(row_data[1])) if pd.notna(row_data[1]) else None
+
+            if enhet_kst:
+                rehab_poang[enhet_kst] = {}
+                for col_idx, manad in col_to_month.items():
+                    val = row_data[col_idx] if col_idx < len(row_data) else None
+                    rehab_poang[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+
+        # Läs TeamBesök (rad 305-312: Frölunda Torg=601, Grimmered=602, etc)
+        teambesok = {}
+        for row_idx in range(305, 313):
+            row_data = df.iloc[row_idx, :].tolist()
+            enhet_namn = row_data[0]
+            enhet_kst = str(int(row_data[1])) if pd.notna(row_data[1]) else None
+
+            if enhet_kst:
+                teambesok[enhet_kst] = {}
+                for col_idx, manad in col_to_month.items():
+                    val = row_data[col_idx] if col_idx < len(row_data) else None
+                    teambesok[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+
+        return {
+            'rehab_poang': rehab_poang,
+            'teambesok': teambesok
+        }
+    except Exception as e:
+        print(f"Fel vid läsning av KPI-data: {e}")
+        return {'rehab_poang': {}, 'teambesok': {}}
+
+
+# ========================================
 # ENHETSDATA - Alla 4 enheter
 # ========================================
 
@@ -188,8 +320,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},  # Rehab har ingen listning
                 'acg_poang': {'actual': 0, 'budget': 0},  # Rehab har inga ACG-poäng
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 780000, 'budget': 850000},
-                'intakter_3053': {'actual': 780000, 'budget': 850000},  # Alla intäkter är Rehab
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 520000, 'budget': 610000},
                 'fte': {'actual': 8.5, 'budget': 10.2},
                 'fte_breakdown': {
@@ -204,8 +336,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},
                 'acg_poang': {'actual': 0, 'budget': 0},
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 795000, 'budget': 860000},
-                'intakter_3053': {'actual': 795000, 'budget': 860000},
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 535000, 'budget': 620000},
                 'fte': {'actual': 8.8, 'budget': 10.4},
                 'fte_breakdown': {
@@ -220,8 +352,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},
                 'acg_poang': {'actual': 0, 'budget': 0},
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 810000, 'budget': 870000},
-                'intakter_3053': {'actual': 810000, 'budget': 870000},
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 550000, 'budget': 630000},
                 'fte': {'actual': 9.0, 'budget': 10.6},
                 'fte_breakdown': {
@@ -244,8 +376,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},
                 'acg_poang': {'actual': 0, 'budget': 0},
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 680000, 'budget': 750000},
-                'intakter_3053': {'actual': 680000, 'budget': 750000},
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 450000, 'budget': 540000},
                 'fte': {'actual': 7.2, 'budget': 8.8},
                 'fte_breakdown': {
@@ -260,8 +392,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},
                 'acg_poang': {'actual': 0, 'budget': 0},
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 695000, 'budget': 760000},
-                'intakter_3053': {'actual': 695000, 'budget': 760000},
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 465000, 'budget': 550000},
                 'fte': {'actual': 7.5, 'budget': 9.0},
                 'fte_breakdown': {
@@ -276,8 +408,8 @@ ENHETER_DATA = {
                 'listning': {'actual': 0, 'budget': 0},
                 'acg_poang': {'actual': 0, 'budget': 0},
                 'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 710000, 'budget': 770000},
-                'intakter_3053': {'actual': 710000, 'budget': 770000},
+                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
+                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
                 'personalkostnad': {'actual': 480000, 'budget': 560000},
                 'fte': {'actual': 7.8, 'budget': 9.2},
                 'fte_breakdown': {
@@ -291,6 +423,111 @@ ENHETER_DATA = {
         }
     }
 }
+
+# ========================================
+# UPPDATERA REHAB-DATA FRÅN FILER
+# ========================================
+
+def uppdatera_rehab_data():
+    """Uppdaterar Rehab-intäkter och poäng från P&L och KPI-filer"""
+    try:
+        # Ladda KPI-data
+        kpi_data = load_kpi_data()
+
+        # Mapping mellan Rehab-enhet och dess VC-enhet för Rehab-poäng
+        rehab_to_vc_mapping = {
+            '601': '102',  # Frölunda Torg Rehab -> Frölunda Torg VC
+            '602': '103',  # Grimmered Rehab -> Grimmered VC
+        }
+
+        # Uppdatera intäkter för alla Rehab-enheter från P&L
+        for enhet_kst in ['601', '602']:
+            if enhet_kst in ENHETER_DATA:
+                for manad in ENHETER_DATA[enhet_kst]['månader'].keys():
+                    # Läs intäkter från P&L
+                    intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
+
+                    # Uppdatera intakter_totalt och intakter_3053 med samma värde
+                    ENHETER_DATA[enhet_kst]['månader'][manad]['intakter_totalt'] = intakter
+                    ENHETER_DATA[enhet_kst]['månader'][manad]['intakter_3053'] = intakter
+
+                    # Lägg till Rehab-poäng från motsvarande VC-enhet
+                    vc_kst = rehab_to_vc_mapping.get(enhet_kst)
+                    if vc_kst and vc_kst in kpi_data.get('rehab_poang', {}):
+                        poang = kpi_data['rehab_poang'][vc_kst].get(manad, 0)
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['rehab_poang_kpi'] = poang
+                    else:
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['rehab_poang_kpi'] = 0
+
+                    # Lägg till TeamBesök från KPI
+                    if enhet_kst in kpi_data.get('teambesok', {}):
+                        teambesok = kpi_data['teambesok'][enhet_kst].get(manad, 0)
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['teambesok'] = teambesok
+                    else:
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['teambesok'] = 0
+
+        # Lägg också till Rehab-poäng och TeamBesök för VC-enheter (för visning)
+        for enhet_kst in ['102', '103']:
+            if enhet_kst in ENHETER_DATA:
+                for manad in ENHETER_DATA[enhet_kst]['månader'].keys():
+                    # Lägg till rehab_poang från KPI
+                    if enhet_kst in kpi_data.get('rehab_poang', {}):
+                        poang = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['rehab_poang_kpi'] = poang
+                    else:
+                        ENHETER_DATA[enhet_kst]['månader'][manad]['rehab_poang_kpi'] = 0
+
+    except Exception as e:
+        print(f"Fel vid uppdatering av Rehab-data: {e}")
+
+# ========================================
+# HÄMTA AKTUELL DATA (DIREKT FRÅN FILER)
+# ========================================
+
+def get_current_data(enhet_kst, manad):
+    """
+    Hämtar aktuell data för en enhet och månad.
+    För Rehab-enheter (601, 602): Läser intäkter direkt från P&L och poäng från KPI-filen
+    För VC-enheter: Använder ENHETER_DATA men uppdaterar Rehab-poäng från KPI-filen
+    """
+    # Börja med data från ENHETER_DATA
+    base_data = ENHETER_DATA[enhet_kst]['månader'][manad].copy()
+
+    # För Rehab-enheter (601, 602): Läs intäkter från P&L
+    if enhet_kst in ['601', '602']:
+        # Hämta intäkter från P&L
+        intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
+        base_data['intakter_totalt'] = intakter
+        base_data['intakter_3053'] = intakter
+
+        # Hämta KPI-data
+        kpi_data = load_kpi_data()
+
+        # Mapping mellan Rehab-enhet och VC-enhet
+        rehab_to_vc = {'601': '102', '602': '103'}
+        vc_kst = rehab_to_vc.get(enhet_kst)
+
+        # Hämta Rehab-poäng från VC-enheten i KPI-filen
+        if vc_kst and vc_kst in kpi_data.get('rehab_poang', {}):
+            base_data['rehab_poang_kpi'] = kpi_data['rehab_poang'][vc_kst].get(manad, 0)
+        else:
+            base_data['rehab_poang_kpi'] = 0
+
+        # Hämta TeamBesök
+        if enhet_kst in kpi_data.get('teambesok', {}):
+            base_data['teambesok'] = kpi_data['teambesok'][enhet_kst].get(manad, 0)
+        else:
+            base_data['teambesok'] = 0
+
+    # För VC-enheter: Lägg till Rehab-poäng från KPI
+    elif enhet_kst in ['102', '103']:
+        kpi_data = load_kpi_data()
+        if enhet_kst in kpi_data.get('rehab_poang', {}):
+            base_data['rehab_poang_kpi'] = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
+        else:
+            base_data['rehab_poang_kpi'] = 0
+
+    return base_data
 
 # Session state initiering
 if 'vec_comments' not in st.session_state:
@@ -431,7 +668,8 @@ def main():
 
     # Hämta enhetens data
     enhet_info = ENHETER_DATA[vald_enhet_kst]
-    current_data = enhet_info['månader'][vald_manad]
+    # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
+    current_data = get_current_data(vald_enhet_kst, vald_manad)
 
     # Är det en Rehab-enhet?
     is_rehab = enhet_info['typ'] == 'Rehab'
@@ -482,56 +720,65 @@ def main():
                 st.metric("Casemix", f"{actual:.2f}", f"{avv:+.2f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:.2f}")
 
-            # Rehab Poäng (om VC har rehab-intäkter)
+            # Rehab Poäng (från KPI-fil)
             with col4:
                 st.markdown("#### 💪 Rehab Poäng")
-                intakter = current_data['intakter_3053']['actual']
-                budget_intakter = current_data['intakter_3053']['budget']
+                actual = current_data.get('rehab_poang_kpi', 0)
 
-                if intakter > 0:
-                    actual = calculate_rehab_poang(intakter)
-                    budget = calculate_rehab_poang(budget_intakter)
-                    avv = actual - budget
-                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                    traffic, _ = get_traffic_light(avv_pct)
-
-                    st.metric("Poäng (3053/523)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                    st.markdown(f"{traffic} Budget: {budget:,.0f}")
+                if actual > 0:
+                    st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
+                    st.markdown("📊 Från KPIer Storg-GBG")
                 else:
                     st.info("Ingen Rehab-verksamhet")
 
         else:
-            # REHAB: Visa Intäkter, Rehab-poäng, FTE, Personalkostnad
-            col1, col2, col3, col4 = st.columns(4)
+            # REHAB: Visa Intäkter (P&L), Rehab-poäng (KPI), TeamBesök (KPI), FTE, Personalkostnad
+            st.markdown("### 📊 Nyckeltal - Rehab")
 
-            # Rehab Intäkter
+            # Första raden: Intäkter och Poäng från filer
+            col1, col2, col3 = st.columns(3)
+
+            # Rehab Intäkter (från P&L Actual/Budget)
             with col1:
-                st.markdown("#### 💰 Rehab Intäkter")
+                st.markdown("#### 💰 Intäkter Total")
                 actual = current_data['intakter_totalt']['actual']
                 budget = current_data['intakter_totalt']['budget']
                 avv = actual - budget
                 avv_pct = (avv / budget) * 100 if budget > 0 else 0
                 traffic, _ = get_traffic_light(avv_pct)
 
-                st.metric("Intäkter (kr)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
+                st.metric("Revenue Total (P&L)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:,.0f}")
 
-            # Rehab Poäng
+            # Rehab Poäng (från KPI-fil)
             with col2:
                 st.markdown("#### 💪 Rehab Poäng")
-                intakter = current_data['intakter_3053']['actual']
-                budget_intakter = current_data['intakter_3053']['budget']
-                actual = calculate_rehab_poang(intakter)
-                budget = calculate_rehab_poang(budget_intakter)
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
+                actual = current_data.get('rehab_poang_kpi', 0)
 
-                st.metric("Poäng (3053/523)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,.0f}")
+                if actual > 0:
+                    st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
+                    st.markdown("📊 Från KPIer Storg-GBG")
+                else:
+                    st.info("Ingen data i KPI-filen")
+
+            # TeamBesök (från KPI-fil)
+            with col3:
+                st.markdown("#### 🏥 TeamBesök (KPI)")
+                actual = current_data.get('teambesok', 0)
+
+                if actual > 0:
+                    st.metric("TeamBesök", f"{int(actual)}")
+                    st.markdown("📊 Data från KPI-filen")
+                else:
+                    st.info("Ingen data tillgänglig")
+
+            st.markdown("---")
+
+            # Andra raden: FTE och Personalkostnad
+            col4, col5 = st.columns(2)
 
             # FTE
-            with col3:
+            with col4:
                 st.markdown("#### 👔 FTE Total")
                 actual = current_data['fte']['actual']
                 budget = current_data['fte']['budget']
@@ -543,7 +790,7 @@ def main():
                 st.markdown(f"{traffic} Budget: {budget:.1f}")
 
             # Personalkostnad
-            with col4:
+            with col5:
                 st.markdown("#### 💰 Personalkostnad")
                 actual = current_data['personalkostnad']['actual']
                 budget = current_data['personalkostnad']['budget']
