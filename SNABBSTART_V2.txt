@@ -1,0 +1,73 @@
+╔══════════════════════════════════════════════════════════════╗
+║         DASHBOARD V2 - KLART ATT DEPLOYA! 🎉                ║
+╚══════════════════════════════════════════════════════════════╝
+
+✅ ALLA DINA ÖNSKEMÅL ÄR FIXADE:
+
+1. ✅ VEC kommentarer sparas nu (session state)
+2. ✅ Månadsval: Jan, Feb, Mars 2026
+3. ✅ Personalkostnader tydligare (Läk, SSK, USK, etc)
+4. ✅ Avvikelseanalys utvecklad med konkreta exempel
+5. ✅ "Fullversionen"-texten borttagen
+6. ✅ Månadsväljare i sidebar
+7. ✅ "Command Center" → "Översikt"
+8. ✅ Nya KPIer: ACG Casemix, Rehab-poäng
+9. ✅ Rehab beräkning: Intäkter 3053 / 523 kr
+
+───────────────────────────────────────────────────────────────
+
+🚀 SÅ HÄR DEPLOYAR DU V2:
+
+ALTERNATIV 1 (ENKLAST):
+═══════════════════════
+Dubbelklicka på:
+   DEPLOY_V2.bat
+
+→ Skriptet pushar automatiskt till GitHub
+→ Streamlit Cloud uppdaterar automatiskt
+→ Klart på 2 minuter!
+
+ALTERNATIV 2 (MANUELLT):
+═══════════════════════
+1. Öppna Git Bash i denna mapp
+2. Kör:
+   git add app_cloud.py
+   git commit -m "v2: Månadsval och förbättringar"
+   git push origin main
+
+───────────────────────────────────────────────────────────────
+
+📱 TESTA DEN NYA VERSIONEN:
+
+URL: https://ezzat-vgr-controller-egmledvvicrntapps59uurv.streamlit.app/
+Lösenord: citus2026
+
+VAD DU BORDE SE:
+• Månadsväljare i sidebar (Jan, Feb, Mars 2026)
+• 4 KPI-kort: Listning, ACG Poäng, Casemix, Rehab
+• Avvikelseanalys med konkreta exempel
+• Trender för alla 3 månader
+• VEC-kommentarer som sparas
+
+───────────────────────────────────────────────────────────────
+
+📄 MER INFO:
+
+Läs: UPPDATERINGAR_V2.md
+     (Detaljerad beskrivning av alla ändringar)
+
+───────────────────────────────────────────────────────────────
+
+🎯 NÄSTA STEG EFTER DEPLOY:
+
+1. Testa appen på mobil och dator
+2. Visa för Magnus/VEC
+3. Samla feedback
+4. Lägg till fler enheter (vi har bara Frölunda Torg nu)
+5. Koppla till Google Sheets för real-time data
+
+───────────────────────────────────────────────────────────────
+
+Frågor? Säg bara till! 🚀
+
+- Citus

@@ -1,0 +1,31 @@
+📱 ÖPPNA APPEN PÅ MOBIL (SAMMA WIFI)
+═══════════════════════════════════════
+
+Länk att öppna i mobil-browser:
+
+http://10.214.10.88:8502
+
+---
+
+INSTRUKTIONER:
+1. Se till att appen körs på datorn (dubbelklicka på STARTA_APPEN.bat)
+2. Öppna Safari eller Chrome på din mobil
+3. Skriv in länken ovan ELLER
+4. Skanna QR-koden nedan (om du har en QR-scanner)
+
+---
+
+LÖSENORD: citus2026
+
+---
+
+OBS! Detta fungerar bara när:
+- Din dator har appen igång
+- Mobil och dator är på samma WiFi-nätverk
+
+För att använda ÖVERALLT (4G/5G):
+- Säg till Citus att deploya till Streamlit Cloud
+- Då får du en permanent länk som fungerar överallt!
+
+═══════════════════════════════════════
+Ezzat's Controlling System
