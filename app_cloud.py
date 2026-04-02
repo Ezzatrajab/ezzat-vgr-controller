@@ -205,237 +205,153 @@ def load_kpi_data():
 # ENHETSDATA - Alla 4 enheter
 # ========================================
 
+# Uppdaterad ENHETER_DATA med alla 20 enheter
+# Månadsdatan hämtas dynamiskt från Excel-filer via get_current_data()
+
 ENHETER_DATA = {
-    '102': {  # Frölunda Torg VC
+    # Stor-Göteborg VC (12 enheter)
+    '102': {
         'enhet_namn': 'Frölunda Torg',
         'typ': 'VC',
         'vec': 'Anna Victorin',
         'region': 'Stor-Göteborg',
-        'månader': {
-            '2026-01': {
-                'listning': {'actual': 8180, 'budget': 8200},
-                'acg_poang': {'actual': 2698, 'budget': 2750},
-                'acg_casemix': {'actual': 1.02, 'budget': 1.04},
-                'intakter_totalt': {'actual': 3420000, 'budget': 3500000},
-                'intakter_3053': {'actual': 523000, 'budget': 550000},
-                'personalkostnad': {'actual': 1315000, 'budget': 1620000},
-                'fte': {'actual': 16.1, 'budget': 21.69},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 4.8, 'budget': 5.5, 'kostnad_actual': 495000, 'kostnad_budget': 567500},
-                    'Sjuksköterska': {'actual': 6.2, 'budget': 10.5, 'kostnad_actual': 334800, 'kostnad_budget': 567000},
-                    'Undersköterska': {'actual': 1.1, 'budget': 2.0, 'kostnad_actual': 44000, 'kostnad_budget': 80000},
-                    'Psykolog': {'actual': 0.9, 'budget': 1.0, 'kostnad_actual': 54000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 2.2, 'budget': 1.25, 'kostnad_actual': 99000, 'kostnad_budget': 56250},
-                    'VEC/Vårdadmin': {'actual': 0.9, 'budget': 1.44, 'kostnad_actual': 58500, 'kostnad_budget': 93600},
-                }
-            },
-            '2026-02': {
-                'listning': {'actual': 8165, 'budget': 8220},
-                'acg_poang': {'actual': 2672, 'budget': 2743},
-                'acg_casemix': {'actual': 1.01, 'budget': 1.04},
-                'intakter_totalt': {'actual': 3380000, 'budget': 3520000},
-                'intakter_3053': {'actual': 530000, 'budget': 550000},
-                'personalkostnad': {'actual': 1285000, 'budget': 1610000},
-                'fte': {'actual': 16.5, 'budget': 19.69},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 4.9, 'budget': 5.3, 'kostnad_actual': 505750, 'kostnad_budget': 546950},
-                    'Sjuksköterska': {'actual': 6.5, 'budget': 9.8, 'kostnad_actual': 351000, 'kostnad_budget': 529200},
-                    'Undersköterska': {'actual': 1.0, 'budget': 2.0, 'kostnad_actual': 40000, 'kostnad_budget': 80000},
-                    'Psykolog': {'actual': 0.9, 'budget': 1.0, 'kostnad_actual': 54000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 2.3, 'budget': 1.15, 'kostnad_actual': 103500, 'kostnad_budget': 51750},
-                    'VEC/Vårdadmin': {'actual': 0.9, 'budget': 0.44, 'kostnad_actual': 58500, 'kostnad_budget': 28600},
-                }
-            },
-            '2026-03': {
-                'listning': {'actual': 8150, 'budget': 8240},
-                'acg_poang': {'actual': 2650, 'budget': 2737},
-                'acg_casemix': {'actual': 1.00, 'budget': 1.04},
-                'intakter_totalt': {'actual': 3350000, 'budget': 3540000},
-                'intakter_3053': {'actual': 540000, 'budget': 550000},
-                'personalkostnad': {'actual': 1237503, 'budget': 1604223},
-                'fte': {'actual': 15.2, 'budget': 20.69},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 4.7, 'budget': 5.2, 'kostnad_actual': 484750, 'kostnad_budget': 536400},
-                    'Sjuksköterska': {'actual': 5.87, 'budget': 10.05, 'kostnad_actual': 316980, 'kostnad_budget': 542700},
-                    'Undersköterska': {'actual': 1.0, 'budget': 2.0, 'kostnad_actual': 40000, 'kostnad_budget': 80000},
-                    'Psykolog': {'actual': 0.85, 'budget': 1.0, 'kostnad_actual': 51000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 2.05, 'budget': 1.04, 'kostnad_actual': 92250, 'kostnad_budget': 46800},
-                    'VEC/Vårdadmin': {'actual': 0.77, 'budget': 2.44, 'kostnad_actual': 50050, 'kostnad_budget': 158720},
-                }
-            }
-        }
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
     },
-    '103': {  # Grimmered VC
+    '103': {
         'enhet_namn': 'Grimmered',
         'typ': 'VC',
-        'vec': 'Anna Victorin',
+        'vec': 'Ulrika Klugge',
         'region': 'Stor-Göteborg',
-        'månader': {
-            '2026-01': {
-                'listning': {'actual': 7890, 'budget': 8050},
-                'acg_poang': {'actual': 2580, 'budget': 2690},
-                'acg_casemix': {'actual': 1.03, 'budget': 1.05},
-                'intakter_totalt': {'actual': 3250000, 'budget': 3450000},
-                'intakter_3053': {'actual': 0, 'budget': 0},
-                'personalkostnad': {'actual': 1420000, 'budget': 1550000},
-                'fte': {'actual': 17.5, 'budget': 19.2},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 5.2, 'budget': 5.8, 'kostnad_actual': 536400, 'kostnad_budget': 598400},
-                    'Sjuksköterska': {'actual': 7.1, 'budget': 8.5, 'kostnad_actual': 383400, 'kostnad_budget': 459000},
-                    'Undersköterska': {'actual': 1.5, 'budget': 1.8, 'kostnad_actual': 60000, 'kostnad_budget': 72000},
-                    'Psykolog': {'actual': 1.2, 'budget': 1.0, 'kostnad_actual': 72000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 1.8, 'budget': 1.5, 'kostnad_actual': 81000, 'kostnad_budget': 67500},
-                    'VEC/Vårdadmin': {'actual': 0.7, 'budget': 0.6, 'kostnad_actual': 45500, 'kostnad_budget': 39000},
-                }
-            },
-            '2026-02': {
-                'listning': {'actual': 7920, 'budget': 8070},
-                'acg_poang': {'actual': 2595, 'budget': 2705},
-                'acg_casemix': {'actual': 1.02, 'budget': 1.05},
-                'intakter_totalt': {'actual': 3280000, 'budget': 3470000},
-                'intakter_3053': {'actual': 0, 'budget': 0},
-                'personalkostnad': {'actual': 1435000, 'budget': 1565000},
-                'fte': {'actual': 17.8, 'budget': 19.4},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 5.3, 'budget': 5.9, 'kostnad_actual': 546850, 'kostnad_budget': 608850},
-                    'Sjuksköterska': {'actual': 7.3, 'budget': 8.6, 'kostnad_actual': 394200, 'kostnad_budget': 464400},
-                    'Undersköterska': {'actual': 1.6, 'budget': 1.8, 'kostnad_actual': 64000, 'kostnad_budget': 72000},
-                    'Psykolog': {'actual': 1.1, 'budget': 1.0, 'kostnad_actual': 66000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 1.7, 'budget': 1.5, 'kostnad_actual': 76500, 'kostnad_budget': 67500},
-                    'VEC/Vårdadmin': {'actual': 0.8, 'budget': 0.6, 'kostnad_actual': 52000, 'kostnad_budget': 39000},
-                }
-            },
-            '2026-03': {
-                'listning': {'actual': 7950, 'budget': 8090},
-                'acg_poang': {'actual': 2610, 'budget': 2720},
-                'acg_casemix': {'actual': 1.01, 'budget': 1.05},
-                'intakter_totalt': {'actual': 3310000, 'budget': 3490000},
-                'intakter_3053': {'actual': 0, 'budget': 0},
-                'personalkostnad': {'actual': 1450000, 'budget': 1580000},
-                'fte': {'actual': 18.0, 'budget': 19.6},
-                'fte_breakdown': {
-                    'Läkare': {'actual': 5.4, 'budget': 6.0, 'kostnad_actual': 557300, 'kostnad_budget': 619300},
-                    'Sjuksköterska': {'actual': 7.5, 'budget': 8.7, 'kostnad_actual': 405000, 'kostnad_budget': 469800},
-                    'Undersköterska': {'actual': 1.6, 'budget': 1.8, 'kostnad_actual': 64000, 'kostnad_budget': 72000},
-                    'Psykolog': {'actual': 1.0, 'budget': 1.0, 'kostnad_actual': 60000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 1.7, 'budget': 1.5, 'kostnad_actual': 76500, 'kostnad_budget': 67500},
-                    'VEC/Vårdadmin': {'actual': 0.8, 'budget': 0.6, 'kostnad_actual': 52000, 'kostnad_budget': 39000},
-                }
-            }
-        }
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
     },
-    '601': {  # Frölunda Torg Rehab
+    '104': {
+        'enhet_namn': 'Majorna',
+        'typ': 'VC',
+        'vec': 'Susanne Törnblom',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '106': {
+        'enhet_namn': 'Landala',
+        'typ': 'VC',
+        'vec': 'Maria Nyqvist',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '107': {
+        'enhet_namn': 'Pedagogen Park',
+        'typ': 'VC',
+        'vec': 'Fredrik',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '108-109': {
+        'enhet_namn': 'Åby-Källered',
+        'typ': 'VC',
+        'vec': 'Theres E',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '110': {
+        'enhet_namn': 'Kviberg',
+        'typ': 'VC',
+        'vec': 'VEC namn saknas',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '111': {
+        'enhet_namn': 'Olskroken',
+        'typ': 'VC',
+        'vec': 'VEC namn saknas',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '302-303': {
+        'enhet_namn': 'Avenyn-Lorensberg',
+        'typ': 'VC',
+        'vec': 'Mats Norin',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '304': {
+        'enhet_namn': 'Husaren',
+        'typ': 'VC',
+        'vec': 'Maria Sahl',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '015': {
+        'enhet_namn': 'Karlastaden',
+        'typ': 'VC',
+        'vec': 'Theresia Nilhag',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '4020': {
+        'enhet_namn': 'City VC',
+        'typ': 'VC',
+        'vec': 'Amanda Lidström',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+
+    # Rehab (8 enheter)
+    '601': {
         'enhet_namn': 'Frölunda Torg Rehab',
         'typ': 'Rehab',
-        'vec': 'Anna Victorin',
+        'vec': 'Elin Magnusson',
         'region': 'Stor-Göteborg',
-        'månader': {
-            '2026-01': {
-                'listning': {'actual': 0, 'budget': 0},  # Rehab har ingen listning
-                'acg_poang': {'actual': 0, 'budget': 0},  # Rehab har inga ACG-poäng
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 520000, 'budget': 610000},
-                'fte': {'actual': 8.5, 'budget': 10.2},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 3.2, 'budget': 4.0, 'kostnad_actual': 172800, 'kostnad_budget': 216000},
-                    'Arbetsterapeut': {'actual': 2.8, 'budget': 3.5, 'kostnad_actual': 151200, 'kostnad_budget': 189000},
-                    'Psykolog': {'actual': 1.2, 'budget': 1.5, 'kostnad_actual': 72000, 'kostnad_budget': 90000},
-                    'Kurator': {'actual': 0.8, 'budget': 1.0, 'kostnad_actual': 48000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 0.5, 'budget': 0.2, 'kostnad_actual': 22500, 'kostnad_budget': 9000},
-                }
-            },
-            '2026-02': {
-                'listning': {'actual': 0, 'budget': 0},
-                'acg_poang': {'actual': 0, 'budget': 0},
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 535000, 'budget': 620000},
-                'fte': {'actual': 8.8, 'budget': 10.4},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 3.3, 'budget': 4.1, 'kostnad_actual': 178200, 'kostnad_budget': 221400},
-                    'Arbetsterapeut': {'actual': 2.9, 'budget': 3.6, 'kostnad_actual': 156600, 'kostnad_budget': 194400},
-                    'Psykolog': {'actual': 1.3, 'budget': 1.5, 'kostnad_actual': 78000, 'kostnad_budget': 90000},
-                    'Kurator': {'actual': 0.8, 'budget': 1.0, 'kostnad_actual': 48000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 0.5, 'budget': 0.2, 'kostnad_actual': 22500, 'kostnad_budget': 9000},
-                }
-            },
-            '2026-03': {
-                'listning': {'actual': 0, 'budget': 0},
-                'acg_poang': {'actual': 0, 'budget': 0},
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 550000, 'budget': 630000},
-                'fte': {'actual': 9.0, 'budget': 10.6},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 3.4, 'budget': 4.2, 'kostnad_actual': 183600, 'kostnad_budget': 226800},
-                    'Arbetsterapeut': {'actual': 3.0, 'budget': 3.7, 'kostnad_actual': 162000, 'kostnad_budget': 199800},
-                    'Psykolog': {'actual': 1.3, 'budget': 1.5, 'kostnad_actual': 78000, 'kostnad_budget': 90000},
-                    'Kurator': {'actual': 0.8, 'budget': 1.0, 'kostnad_actual': 48000, 'kostnad_budget': 60000},
-                    'Admin/Stab': {'actual': 0.5, 'budget': 0.2, 'kostnad_actual': 22500, 'kostnad_budget': 9000},
-                }
-            }
-        }
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
     },
-    '602': {  # Grimmered Rehab
+    '602': {
         'enhet_namn': 'Grimmered Rehab',
         'typ': 'Rehab',
-        'vec': 'Anna Victorin',
+        'vec': 'Elin Magnusson',
         'region': 'Stor-Göteborg',
-        'månader': {
-            '2026-01': {
-                'listning': {'actual': 0, 'budget': 0},
-                'acg_poang': {'actual': 0, 'budget': 0},
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 450000, 'budget': 540000},
-                'fte': {'actual': 7.2, 'budget': 8.8},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 2.8, 'budget': 3.5, 'kostnad_actual': 151200, 'kostnad_budget': 189000},
-                    'Arbetsterapeut': {'actual': 2.4, 'budget': 3.0, 'kostnad_actual': 129600, 'kostnad_budget': 162000},
-                    'Psykolog': {'actual': 1.0, 'budget': 1.2, 'kostnad_actual': 60000, 'kostnad_budget': 72000},
-                    'Kurator': {'actual': 0.7, 'budget': 0.9, 'kostnad_actual': 42000, 'kostnad_budget': 54000},
-                    'Admin/Stab': {'actual': 0.3, 'budget': 0.2, 'kostnad_actual': 13500, 'kostnad_budget': 9000},
-                }
-            },
-            '2026-02': {
-                'listning': {'actual': 0, 'budget': 0},
-                'acg_poang': {'actual': 0, 'budget': 0},
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 465000, 'budget': 550000},
-                'fte': {'actual': 7.5, 'budget': 9.0},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 2.9, 'budget': 3.6, 'kostnad_actual': 156600, 'kostnad_budget': 194400},
-                    'Arbetsterapeut': {'actual': 2.5, 'budget': 3.1, 'kostnad_actual': 135000, 'kostnad_budget': 167400},
-                    'Psykolog': {'actual': 1.1, 'budget': 1.2, 'kostnad_actual': 66000, 'kostnad_budget': 72000},
-                    'Kurator': {'actual': 0.7, 'budget': 0.9, 'kostnad_actual': 42000, 'kostnad_budget': 54000},
-                    'Admin/Stab': {'actual': 0.3, 'budget': 0.2, 'kostnad_actual': 13500, 'kostnad_budget': 9000},
-                }
-            },
-            '2026-03': {
-                'listning': {'actual': 0, 'budget': 0},
-                'acg_poang': {'actual': 0, 'budget': 0},
-                'acg_casemix': {'actual': 0, 'budget': 0},
-                'intakter_totalt': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'intakter_3053': {'actual': 0, 'budget': 0},  # Läses från P&L
-                'personalkostnad': {'actual': 480000, 'budget': 560000},
-                'fte': {'actual': 7.8, 'budget': 9.2},
-                'fte_breakdown': {
-                    'Sjukgymnast': {'actual': 3.0, 'budget': 3.7, 'kostnad_actual': 162000, 'kostnad_budget': 199800},
-                    'Arbetsterapeut': {'actual': 2.6, 'budget': 3.2, 'kostnad_actual': 140400, 'kostnad_budget': 172800},
-                    'Psykolog': {'actual': 1.1, 'budget': 1.2, 'kostnad_actual': 66000, 'kostnad_budget': 72000},
-                    'Kurator': {'actual': 0.8, 'budget': 0.9, 'kostnad_actual': 48000, 'kostnad_budget': 54000},
-                    'Admin/Stab': {'actual': 0.3, 'budget': 0.2, 'kostnad_actual': 13500, 'kostnad_budget': 9000},
-                }
-            }
-        }
-    }
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '603': {
+        'enhet_namn': 'Majorna Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '604': {
+        'enhet_namn': 'Pedagogen Park Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '605': {
+        'enhet_namn': 'Åby Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '607': {
+        'enhet_namn': 'Olskroken Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '660': {
+        'enhet_namn': 'Avenyn Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '715': {
+        'enhet_namn': 'Karlastaden Rehab',
+        'typ': 'Rehab',
+        'vec': 'Elin Magnusson',
+        'region': 'Stor-Göteborg',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
 }
 
 # ========================================
