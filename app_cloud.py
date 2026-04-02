@@ -137,7 +137,7 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
 @st.cache_data(ttl=3600)
 def load_kpi_data():
     """
-    Läser KPI-data från KPIer Storg-GBG.xlsx
+    Läser KPI-data från KPIer Stor-GBG.xlsx
     Returns dictionary med struktur:
     {
         'rehab_poang': {enhet_vc_kst: {manad: värde}},
@@ -148,7 +148,7 @@ def load_kpi_data():
         # Sökväg som fungerar både lokalt och på Streamlit Cloud
         import os
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        kpi_path = os.path.join(script_dir, 'data', 'KPIer Storg-GBG.xlsx')
+        kpi_path = os.path.join(script_dir, 'data', 'KPIer Stor-GBG.xlsx')
         df = pd.read_excel(kpi_path, sheet_name='Data', header=None)
 
         # Hitta Rehab Poäng (rad 292)
@@ -747,7 +747,7 @@ def main():
 
                 if actual > 0:
                     st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
-                    st.markdown("📊 Från KPIer Storg-GBG")
+                    st.markdown("📊 Från KPIer Stor-GBG")
                 else:
                     st.info("Ingen Rehab-verksamhet")
 
@@ -777,7 +777,7 @@ def main():
 
                 if actual > 0:
                     st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
-                    st.markdown("📊 Från KPIer Storg-GBG")
+                    st.markdown("📊 Från KPIer Stor-GBG")
                 else:
                     st.info("Ingen data i KPI-filen")
 
