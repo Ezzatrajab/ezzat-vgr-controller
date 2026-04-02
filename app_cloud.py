@@ -493,18 +493,44 @@ def uppdatera_rehab_data():
 def get_current_data(enhet_kst, manad):
     """
     Hämtar aktuell data för en enhet och månad.
-    För Rehab-enheter (601, 602): Läser intäkter direkt från P&L och poäng från KPI-filen
-    För VC-enheter: Använder ENHETER_DATA men uppdaterar Rehab-poäng från KPI-filen
+    Läser ALLA data från riktiga Excel-filer (ingen hårdkodad data).
     """
-    # Börja med data från ENHETER_DATA
-    base_data = ENHETER_DATA[enhet_kst]['månader'][manad].copy()
+    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
 
-    # För Rehab-enheter (601, 602): Läs intäkter från P&L
+    # Börja med data från ENHETER_DATA (för enhet_namn, typ, vec, region)
+    # Men ersätt alla numeriska värden med riktiga data
+    if enhet_kst in ENHETER_DATA and manad in ENHETER_DATA[enhet_kst]['månader']:
+        base_data = ENHETER_DATA[enhet_kst]['månader'][manad].copy()
+    else:
+        # Om det inte finns i ENHETER_DATA, skapa tom dict
+        base_data = {}
+
+    # Hämta all faktisk data från Excel-filer
+    real_data = load_all_data_for_enhet(enhet_kst, manad)
+
+    # Uppdatera med faktiska värden
+    base_data['fte'] = {
+        'actual': real_data['fte_actual'],
+        'budget': real_data['fte_budget']
+    }
+
+    base_data['personalkostnad'] = {
+        'actual': real_data['personalkostnad_actual'],
+        'budget': real_data['personalkostnad_budget']
+    }
+
+    # För Rehab-enheter: Läs intäkter från P&L
     if enhet_kst in ['601', '602']:
         # Hämta intäkter från P&L
         intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
         base_data['intakter_totalt'] = intakter
         base_data['intakter_3053'] = intakter
+
+        # Hämta Rehab budget-data
+        rehab_budget = real_data.get('rehab_budget', {})
+        base_data['rehab_budget_maaltal'] = rehab_budget.get('maaltal', 0)
+        base_data['rehab_budget_antal_anstallda'] = rehab_budget.get('antal_anstallda', 0)
+        base_data['rehab_budget_intakt'] = rehab_budget.get('budgeterad_intakt', 0)
 
         # Hämta KPI-data
         kpi_data = load_kpi_data()
@@ -565,37 +591,60 @@ def get_traffic_light(avvikelse_pct, is_cost=False):
             return "🔴", "red-box"
 
 def analyze_personal_avvikelser(enhet_kst, vald_manad):
-    """Analysera personalkostnader per kategori och identifiera stora avvikelser"""
-    fte_breakdown = ENHETER_DATA[enhet_kst]['månader'][vald_manad]['fte_breakdown']
+    """Analysera totala personalkostnader och FTE-avvikelser"""
+    # Hämta aktuell data
+    data = get_current_data(enhet_kst, vald_manad)
+
+    # Beräkna avvikelser
+    fte_actual = data['fte']['actual']
+    fte_budget = data['fte']['budget']
+    fte_avv = fte_actual - fte_budget
+    fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
+
+    kostnad_actual = data['personalkostnad']['actual']
+    kostnad_budget = data['personalkostnad']['budget']
+    kostnad_avv = kostnad_actual - kostnad_budget
+    kostnad_avv_pct = (kostnad_avv / kostnad_budget * 100) if kostnad_budget > 0 else 0
 
     analyser = []
-    for kategori, values in fte_breakdown.items():
-        kostnad_avv = values['kostnad_actual'] - values['kostnad_budget']
-        kostnad_avv_pct = (kostnad_avv / values['kostnad_budget'] * 100) if values['kostnad_budget'] > 0 else 0
 
-        fte_avv = values['actual'] - values['budget']
-        fte_avv_pct = (fte_avv / values['budget'] * 100) if values['budget'] > 0 else 0
+    # Analysera FTE-avvikelse
+    if abs(fte_avv_pct) > 5:
+        status = "🔴 Kritisk" if abs(fte_avv_pct) > 20 else "🟡 Varning"
+        förklaring = ""
 
-        # Identifiera stora avvikelser (över 15% eller under -15%)
-        if abs(kostnad_avv_pct) > 15:
-            status = "🔴 Kritisk" if abs(kostnad_avv_pct) > 30 else "🟡 Varning"
-            förklaring = ""
+        if fte_avv < 0:
+            förklaring = f"**FTE Under budget**: {abs(fte_avv):.1f} FTE saknas ({fte_avv_pct:.1f}%)"
+            förklaring += "\n- Trolig orsak: Vakanta tjänster, rekryteringssvårigheter"
+        else:
+            förklaring = f"**FTE Över budget**: +{fte_avv:.1f} FTE ({fte_avv_pct:.1f}%)"
+            förklaring += "\n- Trolig orsak: Extra bemanning, konsulter?"
 
-            if kostnad_avv_pct < -15:
-                förklaring = f"**Under budget**: {abs(kostnad_avv_pct):.1f}% (-{abs(kostnad_avv):,.0f} kr)"
-                förklaring += f"\n- Saknas: {abs(fte_avv):.1f} FTE"
-                förklaring += "\n- Trolig orsak: Vakanta tjänster, rekryteringssvårigheter"
-            else:
-                förklaring = f"**Över budget**: +{kostnad_avv_pct:.1f}% (+{kostnad_avv:,.0f} kr)"
-                förklaring += f"\n- Över: +{fte_avv:.1f} FTE"
-                förklaring += "\n- Trolig orsak: Extra bemanning, konsulter?"
+        analyser.append({
+            'kategori': 'FTE',
+            'status': status,
+            'kostnad_avv_pct': fte_avv_pct,
+            'förklaring': förklaring
+        })
 
-            analyser.append({
-                'kategori': kategori,
-                'status': status,
-                'kostnad_avv_pct': kostnad_avv_pct,
-                'förklaring': förklaring
-            })
+    # Analysera personalkostnadsavvikelse
+    if abs(kostnad_avv_pct) > 5:
+        status = "🔴 Kritisk" if abs(kostnad_avv_pct) > 20 else "🟡 Varning"
+        förklaring = ""
+
+        if kostnad_avv < 0:
+            förklaring = f"**Personalkostnad Under budget**: -{abs(kostnad_avv):,.0f} kr ({kostnad_avv_pct:.1f}%)"
+            förklaring += "\n- Trolig orsak: Vakanta tjänster, lägre löner än budgeterat"
+        else:
+            förklaring = f"**Personalkostnad Över budget**: +{kostnad_avv:,.0f} kr ({kostnad_avv_pct:.1f}%)"
+            förklaring += "\n- Trolig orsak: Högre löner, övertid, konsulter?"
+
+        analyser.append({
+            'kategori': 'Personalkostnad',
+            'status': status,
+            'kostnad_avv_pct': kostnad_avv_pct,
+            'förklaring': förklaring
+        })
 
     # Sortera efter absolut avvikelse
     analyser.sort(key=lambda x: abs(x['kostnad_avv_pct']), reverse=True)
