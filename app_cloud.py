@@ -14,8 +14,9 @@ from datetime import datetime
 # Import data loader functions
 try:
     from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
+    from rehab_poang_loader import load_rehab_poang_och_top_performers
 except ImportError as e:
-    st.error(f"Kunde inte importera data_loader_functions: {e}")
+    st.error(f"Kunde inte importera data_loader_functions eller rehab_poang_loader: {e}")
     st.stop()
 
 # Konfiguration
@@ -475,27 +476,13 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_budget_antal_anstallda'] = rehab_budget.get('antal_anstallda', 0)
         base_data['rehab_budget_intakt'] = rehab_budget.get('budgeterad_intakt', 0)
 
-        # Hämta KPI-data
+        # Hämta Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
+        rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
+        base_data['rehab_poang_actual'] = rehab_data['total_poang']
+        base_data['top_performers'] = rehab_data['top_performers']
+
+        # Hämta KPI-data (för TeamBesök)
         kpi_data = load_kpi_data()
-
-        # Mapping mellan Rehab-enhet och VC-enhet
-        rehab_to_vc = {
-            '601': '102',  # Frölunda Torg
-            '602': '103',  # Grimmered
-            '603': '104',  # Majorna
-            '604': '107',  # Pedagogen Park
-            '605': '108-109',  # Åby
-            '607': '111',  # Olskroken
-            '660': '302-303',  # Avenyn
-            '715': '015',  # Karlastaden
-        }
-        vc_kst = rehab_to_vc.get(enhet_kst)
-
-        # Hämta Rehab-poäng från VC-enheten i KPI-filen
-        if vc_kst and vc_kst in kpi_data.get('rehab_poang', {}):
-            base_data['rehab_poang_kpi'] = kpi_data['rehab_poang'][vc_kst].get(manad, 0)
-        else:
-            base_data['rehab_poang_kpi'] = 0
 
         # Hämta TeamBesök
         if enhet_kst in kpi_data.get('teambesok', {}):
@@ -770,16 +757,23 @@ def main():
                 st.metric("Revenue Total (P&L)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:,.0f}")
 
-            # Rehab Poäng (från KPI-fil)
+            # Rehab Poäng (från Poänguppföljning Rehab 2026)
             with col2:
                 st.markdown("#### 💪 Rehab Poäng")
-                actual = current_data.get('rehab_poang_kpi', 0)
+                actual = current_data.get('rehab_poang_actual', 0)
 
                 if actual > 0:
-                    st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
-                    st.markdown("📊 Från KPIer Stor-GBG")
+                    st.metric("Poäng (Actual)", f"{int(actual):,}")
+                    st.markdown("📊 Från Poänguppföljning Rehab 2026")
+
+                    # Visa top performers (≥200 poäng)
+                    top_performers = current_data.get('top_performers', [])
+                    if top_performers:
+                        st.markdown("##### ⭐ Top Performers (≥200 poäng)")
+                        for person in top_performers:
+                            st.markdown(f"**{person['namn']}**: {person['poang']:.0f} poäng 🎉")
                 else:
-                    st.info("Ingen data i KPI-filen")
+                    st.info("Ingen data ännu")
 
             # TeamBesök (från KPI-fil)
             with col3:
