@@ -16,28 +16,10 @@ def get_file_paths(enhet_kst, base_path=None):
         base_path: Bas-sökväg till data-mappen (om None, använd relativ sökväg)
     """
     if base_path is None:
-        # Peka till rätt plats - VGR Alla enheter/Dashboard/data eller VGR Alla enheter/{enhet_kst}
+        # Standardsökväg: Dashboard/data/{enhet_kst}
+        # Detta fungerar både lokalt och på Streamlit Cloud
         script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Testa olika möjliga platser:
-        # 1. Dashboard/data/{enhet_kst} (för deployed/cloud version)
-        # 2. VGR Alla enheter/{enhet_kst} (parent folder för lokal utveckling)
-        # 3. Absolut sökväg till VGR Alla enheter
-
-        if os.path.exists(os.path.join(script_dir, 'data', enhet_kst)):
-            base_path = os.path.join(script_dir, 'data')
-        else:
-            # Kolla om vi är i Dashboard-mappen, då är parent = VGR Alla enheter
-            parent_dir = os.path.dirname(script_dir)
-            if os.path.exists(os.path.join(parent_dir, enhet_kst)):
-                base_path = parent_dir
-            else:
-                # Absolut sökväg som fallback
-                vgr_path = r'C:\Users\ezzat.rajab.AD\claude-workspace\VGR Alla enheter'
-                if os.path.exists(os.path.join(vgr_path, enhet_kst)):
-                    base_path = vgr_path
-                else:
-                    base_path = os.path.join(script_dir, 'data')
+        base_path = os.path.join(script_dir, 'data')
 
     enhet_path = os.path.join(base_path, enhet_kst)
 

@@ -10,6 +10,13 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
 
+# Import data loader functions
+try:
+    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
+except ImportError as e:
+    st.error(f"Kunde inte importera data_loader_functions: {e}")
+    st.stop()
+
 # Konfiguration
 st.set_page_config(
     page_title="Ezzat's Controlling System",
@@ -495,8 +502,6 @@ def get_current_data(enhet_kst, manad):
     Hämtar aktuell data för en enhet och månad.
     Läser ALLA data från riktiga Excel-filer (ingen hårdkodad data).
     """
-    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
-
     # Börja med data från ENHETER_DATA (för enhet_namn, typ, vec, region)
     # Men ersätt alla numeriska värden med riktiga data
     if enhet_kst in ENHETER_DATA and manad in ENHETER_DATA[enhet_kst]['månader']:
@@ -506,7 +511,15 @@ def get_current_data(enhet_kst, manad):
         base_data = {}
 
     # Hämta all faktisk data från Excel-filer
-    real_data = load_all_data_for_enhet(enhet_kst, manad)
+    try:
+        real_data = load_all_data_for_enhet(enhet_kst, manad)
+    except Exception as e:
+        st.error(f"Fel vid laddning av data för enhet {enhet_kst}, månad {manad}: {e}")
+        st.exception(e)
+        # Returnera tom data om fel uppstår
+        base_data['fte'] = {'actual': 0, 'budget': 0}
+        base_data['personalkostnad'] = {'actual': 0, 'budget': 0}
+        return base_data
 
     # Uppdatera med faktiska värden
     base_data['fte'] = {
