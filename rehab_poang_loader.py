@@ -63,6 +63,7 @@ def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
             file_path = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
 
         if not os.path.exists(file_path):
+            print(f"⚠️ Poänguppföljning-fil hittades inte på: {file_path}")
             return {'total_poang': 0, 'top_performers': []}
 
         # Hämta sheet-namn och kolumnindex

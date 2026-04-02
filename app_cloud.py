@@ -477,9 +477,14 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_budget_intakt'] = rehab_budget.get('budgeterad_intakt', 0)
 
         # Hämta Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
-        rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
-        base_data['rehab_poang_actual'] = rehab_data['total_poang']
-        base_data['top_performers'] = rehab_data['top_performers']
+        try:
+            rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
+            base_data['rehab_poang_actual'] = rehab_data['total_poang']
+            base_data['top_performers'] = rehab_data['top_performers']
+        except Exception as e:
+            st.sidebar.warning(f"⚠️ Kunde inte ladda Rehab-poäng: {e}")
+            base_data['rehab_poang_actual'] = 0
+            base_data['top_performers'] = []
 
         # Hämta KPI-data (för TeamBesök)
         kpi_data = load_kpi_data()
