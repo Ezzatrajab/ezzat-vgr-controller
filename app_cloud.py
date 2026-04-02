@@ -12,7 +12,7 @@ from datetime import datetime
 
 # Import data loader functions
 try:
-    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
+    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget, DEBUG_LOG
 except ImportError as e:
     st.error(f"Kunde inte importera data_loader_functions: {e}")
     st.stop()
@@ -524,6 +524,12 @@ def get_current_data(enhet_kst, manad):
         st.markdown("### 🐛 DEBUG INFO")
         for line in debug_info:
             st.text(line)
+
+        # Visa data loader debug log
+        if DEBUG_LOG:
+            st.markdown("#### 📋 Data Loader Log:")
+            for log_line in DEBUG_LOG[-10:]:  # Visa senaste 10 raderna
+                st.text(log_line)
 
     # Börja med data från ENHETER_DATA (för enhet_namn, typ, vec, region)
     # Men ersätt alla numeriska värden med riktiga data

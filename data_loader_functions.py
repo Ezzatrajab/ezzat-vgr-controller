@@ -7,6 +7,14 @@ import pandas as pd
 import os
 from datetime import datetime
 
+# Global debug-lista (kan läsas från Streamlit)
+DEBUG_LOG = []
+
+def add_debug(message):
+    """Lägg till debug-meddelande"""
+    DEBUG_LOG.append(message)
+    print(message)  # Kör lokalt också
+
 def get_file_paths(enhet_kst, base_path=None):
     """
     Returnerar sökvägar till alla datafiler för en enhet
@@ -83,6 +91,20 @@ def load_fte_actual(enhet_kst, manad_str, base_path=None):
         year, month = manad_str.split('-')
         period = int(year + month)
 
+        # DEBUG: Logga tillgängliga perioder
+        available_periods = []
+        for idx, row in df.iterrows():
+            if idx == 0:
+                continue
+            if idx > 20:
+                break
+            period_val = row['Yrkesgrupp']
+            if pd.notna(period_val) and isinstance(period_val, (int, float)):
+                available_periods.append(int(period_val))
+
+        add_debug(f"🔍 load_fte_actual: Söker period {period} för {enhet_kst}")
+        add_debug(f"📋 Tillgängliga perioder: {available_periods}")
+
         # Första kolumnen heter 'Yrkesgrupp' men innehåller period-nummer
         # Rad 0 innehåller texten "Period", rad 1+ innehåller period-nummer
         for idx, row in df.iterrows():
@@ -94,12 +116,17 @@ def load_fte_actual(enhet_kst, manad_str, base_path=None):
             period_val = row['Yrkesgrupp']
             if pd.notna(period_val) and isinstance(period_val, (int, float)) and int(period_val) == period:
                 # Returnera Total-kolumnen
-                return float(row['Total']) if pd.notna(row['Total']) else 0.0
+                fte_value = float(row['Total']) if pd.notna(row['Total']) else 0.0
+                add_debug(f"✅ Hittade period {period}: FTE = {fte_value}")
+                return fte_value
 
+        add_debug(f"❌ Hittade INTE period {period} i filen")
         return 0.0
 
     except Exception as e:
-        print(f"Fel vid läsning av FTE actual för {enhet_kst}, {manad_str}: {e}")
+        add_debug(f"❌ FEL vid läsning av FTE actual för {enhet_kst}, {manad_str}: {e}")
+        import traceback
+        traceback.print_exc()
         return 0.0
 
 
