@@ -624,14 +624,26 @@ def main():
 
     st.sidebar.markdown("---")
 
-    # Enhet-väljare
+    # Enhet-väljare - Dynamiskt från ENHETER_DATA
     st.sidebar.markdown("### 🏥 Välj Enhet")
-    enheter_lista = {
-        "102 - Frölunda Torg (VC)": "102",
-        "103 - Grimmered (VC)": "103",
-        "601 - Frölunda Torg Rehab": "601",
-        "602 - Grimmered Rehab": "602",
-    }
+
+    # Filter: VC eller Rehab
+    enhet_typ_filter = st.sidebar.radio("Typ:", ["Alla", "VC", "Rehab"], horizontal=True)
+
+    # Bygg enheter_lista dynamiskt från ENHETER_DATA
+    enheter_lista = {}
+    for kst in sorted(ENHETER_DATA.keys(), key=lambda x: (x.replace('-','').zfill(10))):
+        enhet = ENHETER_DATA[kst]
+
+        # Filtrera baserat på vald typ
+        if enhet_typ_filter == "VC" and enhet['typ'] != "VC":
+            continue
+        if enhet_typ_filter == "Rehab" and enhet['typ'] != "Rehab":
+            continue
+
+        # Format: "KST - Namn (Typ)"
+        display_name = f"{kst} - {enhet['enhet_namn']} ({enhet['typ']})"
+        enheter_lista[display_name] = kst
 
     vald_enhet_namn = st.sidebar.selectbox("Enhet:", options=list(enheter_lista.keys()), index=0)
     vald_enhet_kst = enheter_lista[vald_enhet_namn]
