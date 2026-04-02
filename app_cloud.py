@@ -502,6 +502,29 @@ def get_current_data(enhet_kst, manad):
     Hämtar aktuell data för en enhet och månad.
     Läser ALLA data från riktiga Excel-filer (ingen hårdkodad data).
     """
+    # DEBUG: Visa info
+    import os
+    debug_info = []
+    debug_info.append(f"🔍 DEBUG: Hämtar data för enhet={enhet_kst}, månad={manad}")
+    debug_info.append(f"📁 Working directory: {os.getcwd()}")
+    debug_info.append(f"📂 Script directory: {os.path.dirname(os.path.abspath(__file__))}")
+
+    # Kolla om data-mappen finns
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(script_dir, 'data', enhet_kst)
+    debug_info.append(f"📂 Data path: {data_path}")
+    debug_info.append(f"✅ Data path exists: {os.path.exists(data_path)}")
+
+    if os.path.exists(data_path):
+        files = os.listdir(data_path)
+        debug_info.append(f"📄 Files in data/{enhet_kst}: {files}")
+
+    # Visa debug i sidebar
+    with st.sidebar:
+        st.markdown("### 🐛 DEBUG INFO")
+        for line in debug_info:
+            st.text(line)
+
     # Börja med data från ENHETER_DATA (för enhet_namn, typ, vec, region)
     # Men ersätt alla numeriska värden med riktiga data
     if enhet_kst in ENHETER_DATA and manad in ENHETER_DATA[enhet_kst]['månader']:
@@ -512,9 +535,11 @@ def get_current_data(enhet_kst, manad):
 
     # Hämta all faktisk data från Excel-filer
     try:
+        st.sidebar.text("🔄 Calling load_all_data_for_enhet()...")
         real_data = load_all_data_for_enhet(enhet_kst, manad)
+        st.sidebar.text(f"✅ Data loaded: FTE={real_data.get('fte_actual', 0):.2f}")
     except Exception as e:
-        st.error(f"Fel vid laddning av data för enhet {enhet_kst}, månad {manad}: {e}")
+        st.error(f"❌ FEL vid laddning av data för enhet {enhet_kst}, månad {manad}: {e}")
         st.exception(e)
         # Returnera tom data om fel uppstår
         base_data['fte'] = {'actual': 0, 'budget': 0}
