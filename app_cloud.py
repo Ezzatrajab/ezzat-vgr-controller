@@ -449,8 +449,21 @@ def get_current_data(enhet_kst, manad):
         'budget': real_data['personalkostnad_budget']
     }
 
+    # Lägg till default-värden för alla keys som UI:et förväntar sig
+    # (för VC-enheter som inte har all data än)
+    if 'listning' not in base_data:
+        base_data['listning'] = {'actual': 0, 'budget': 0}
+    if 'acg_poang' not in base_data:
+        base_data['acg_poang'] = {'actual': 0, 'budget': 0}
+    if 'acg_casemix' not in base_data:
+        base_data['acg_casemix'] = {'actual': 0, 'budget': 0}
+    if 'intakter_totalt' not in base_data:
+        base_data['intakter_totalt'] = {'actual': 0, 'budget': 0}
+    if 'intakter_3053' not in base_data:
+        base_data['intakter_3053'] = {'actual': 0, 'budget': 0}
+
     # För Rehab-enheter: Läs intäkter från P&L
-    if enhet_kst in ['601', '602']:
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
         # Hämta intäkter från P&L
         intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
         base_data['intakter_totalt'] = intakter
@@ -466,7 +479,16 @@ def get_current_data(enhet_kst, manad):
         kpi_data = load_kpi_data()
 
         # Mapping mellan Rehab-enhet och VC-enhet
-        rehab_to_vc = {'601': '102', '602': '103'}
+        rehab_to_vc = {
+            '601': '102',  # Frölunda Torg
+            '602': '103',  # Grimmered
+            '603': '104',  # Majorna
+            '604': '107',  # Pedagogen Park
+            '605': '108-109',  # Åby
+            '607': '111',  # Olskroken
+            '660': '302-303',  # Avenyn
+            '715': '015',  # Karlastaden
+        }
         vc_kst = rehab_to_vc.get(enhet_kst)
 
         # Hämta Rehab-poäng från VC-enheten i KPI-filen
@@ -481,8 +503,9 @@ def get_current_data(enhet_kst, manad):
         else:
             base_data['teambesok'] = 0
 
-    # För VC-enheter: Lägg till Rehab-poäng från KPI
-    elif enhet_kst in ['102', '103']:
+    # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
+    else:
+        # VC-enhet
         kpi_data = load_kpi_data()
         if enhet_kst in kpi_data.get('rehab_poang', {}):
             base_data['rehab_poang_kpi'] = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
