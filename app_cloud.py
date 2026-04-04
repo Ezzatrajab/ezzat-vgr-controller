@@ -1,8 +1,8 @@
 """
-Ezzat's Controlling System - Cloud Version v4.0
+Ezzat's Controlling System - Cloud Version v4.1
 Controller: Ezzat Rajab
-Uppdaterad: 2026-04-04
-Multi-enhet support: Alla 20 enheter
+Uppdaterad: 2026-04-05
+Multi-enhet support: Alla 20 enheter (Åby-Kållered & Avenyn-Lorensberg kombinerade)
 RÄTT DATAKÄLLOR: KPIer Stor-GBG.xlsx + Budget-filer
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 """
@@ -136,7 +136,7 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         return {'actual': 0, 'budget': 0}
 
 
-@st.cache_data(ttl=300)  # 5 minuter cache
+@st.cache_data(ttl=300, show_spinner=False)  # 5 minuter cache - v4.1
 def load_kpi_data():
     """
     Läser KPI-data från KPIer Stor-GBG.xlsx
@@ -169,19 +169,49 @@ def load_kpi_data():
                     col_to_month[i] = f'{year}-{month:02d}'
 
         # Läs Rehab Poäng (rad 293-300: Frölunda Torg=102, Grimmered=103, etc)
+        # För kombinerade enheter: summera Åby (108) + Kållered (109) samt Avenyn (302) + Lorensberg (303)
         rehab_poang = {}
+        rehab_temp = {}  # Temporär lagring för att kunna summera
+
         for row_idx in range(293, 301):
             row_data = df.iloc[row_idx, :].tolist()
-            enhet_namn = row_data[0]
+            enhet_namn = str(row_data[0]) if pd.notna(row_data[0]) else ""
             enhet_kst = str(int(row_data[1])) if pd.notna(row_data[1]) else None
 
             if enhet_kst:
-                rehab_poang[enhet_kst] = {}
+                rehab_temp[enhet_kst] = {}
                 for col_idx, manad in col_to_month.items():
                     val = row_data[col_idx] if col_idx < len(row_data) else None
-                    rehab_poang[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+                    rehab_temp[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+
+        # Kombinera data för Åby-Kållered (108+109)
+        if '108' in rehab_temp and '109' in rehab_temp:
+            rehab_poang['108-109'] = {}
+            for manad in col_to_month.values():
+                aby_val = rehab_temp['108'].get(manad, 0)
+                kallered_val = rehab_temp['109'].get(manad, 0)
+                rehab_poang['108-109'][manad] = aby_val + kallered_val
+        elif '108' in rehab_temp:
+            rehab_poang['108-109'] = rehab_temp['108']
+
+        # Kombinera data för Avenyn-Lorensberg (302+303)
+        if '302' in rehab_temp and '303' in rehab_temp:
+            rehab_poang['302-303'] = {}
+            for manad in col_to_month.values():
+                avenyn_val = rehab_temp['302'].get(manad, 0)
+                lorensberg_val = rehab_temp['303'].get(manad, 0)
+                rehab_poang['302-303'][manad] = avenyn_val + lorensberg_val
+        elif '302' in rehab_temp:
+            rehab_poang['302-303'] = rehab_temp['302']
+
+        # Lägg till övriga enheter (ej kombinerade)
+        for kst, data in rehab_temp.items():
+            if kst not in ['108', '109', '302', '303']:
+                rehab_poang[kst] = data
 
         # Läs TeamBesök (rad 305-312: Frölunda Torg=601, Grimmered=602, etc)
+        # TeamBesök är för Rehab-enheter (605 = Åby Rehab, 660 = Avenyn Rehab, etc)
+        # Dessa kombineras INTE eftersom de redan är separata Rehab-enheter
         teambesok = {}
         for row_idx in range(305, 313):
             row_data = df.iloc[row_idx, :].tolist()
@@ -248,7 +278,7 @@ ENHETER_DATA = {
         'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
     },
     '108-109': {
-        'enhet_namn': 'Åby-Källered',
+        'enhet_namn': 'Åby-Kållered',
         'typ': 'VC',
         'vec': 'Theres E',
         'region': 'Stor-Göteborg',
@@ -368,14 +398,20 @@ def uppdatera_rehab_data():
 
         # Mapping mellan Rehab-enhet och dess VC-enhet för Rehab-poäng
         rehab_to_vc_mapping = {
-            '601': '102',  # Frölunda Torg Rehab -> Frölunda Torg VC
-            '602': '103',  # Grimmered Rehab -> Grimmered VC
+            '601': '102',     # Frölunda Torg Rehab -> Frölunda Torg VC
+            '602': '103',     # Grimmered Rehab -> Grimmered VC
+            '603': '104',     # Majorna Rehab -> Majorna VC
+            '604': '107',     # Pedagogen Park Rehab -> Pedagogen Park VC
+            '605': '108-109', # Åby Rehab -> Åby-Kållered VC
+            '607': '111',     # Olskroken Rehab -> Olskroken VC
+            '660': '302-303', # Avenyn Rehab -> Avenyn-Lorensberg VC
+            '715': '015',     # Karlastaden Rehab -> Karlastaden VC
         }
 
-        # Uppdatera intäkter för alla Rehab-enheter från P&L
-        for enhet_kst in ['601', '602']:
-            if enhet_kst in ENHETER_DATA:
-                for manad in ENHETER_DATA[enhet_kst]['månader'].keys():
+        # Uppdatera intäkter för ALLA Rehab-enheter från P&L
+        for enhet_kst, enhet_data in ENHETER_DATA.items():
+            if enhet_data['typ'] == 'Rehab':
+                for manad in enhet_data['månader'].keys():
                     # Läs intäkter från P&L
                     intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
 
@@ -398,10 +434,10 @@ def uppdatera_rehab_data():
                     else:
                         ENHETER_DATA[enhet_kst]['månader'][manad]['teambesok'] = 0
 
-        # Lägg också till Rehab-poäng och TeamBesök för VC-enheter (för visning)
-        for enhet_kst in ['102', '103']:
-            if enhet_kst in ENHETER_DATA:
-                for manad in ENHETER_DATA[enhet_kst]['månader'].keys():
+        # Lägg till Rehab-poäng för ALLA VC-enheter (för visning)
+        for enhet_kst, enhet_data in ENHETER_DATA.items():
+            if enhet_data['typ'] == 'VC':
+                for manad in enhet_data['månader'].keys():
                     # Lägg till rehab_poang från KPI
                     if enhet_kst in kpi_data.get('rehab_poang', {}):
                         poang = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
@@ -619,15 +655,15 @@ def main():
                 st.error("❌ Fel lösenord! Försök igen.")
 
         st.markdown("---")
-        st.caption("Cloud Version - 4 enheter: 102, 103, 601, 602")
+        st.caption("Cloud Version - Alla 20 enheter (12 VC + 8 Rehab)")
         return
 
     # --- INLOGGAD ---
 
     # Header
     st.markdown('<p class="big-font">📊 Ezzat\'s Controlling System</p>', unsafe_allow_html=True)
-    st.markdown("**Controller:** Ezzat Rajab | **VGR Enheter:** 24 (Stor-Göteborg + Tätort)")
-    st.info("☁️ **CLOUD VERSION** - 4 enheter aktiva: 102, 103, 601, 602")
+    st.markdown("**Controller:** Ezzat Rajab | **VGR Enheter:** 20 (12 VC + 8 Rehab)")
+    st.info("☁️ **CLOUD VERSION** - Alla 20 enheter aktiva (inkl. Åby-Kållered & Avenyn-Lorensberg)")
 
     # Sidebar
     st.sidebar.title("📋 Navigation")
@@ -698,7 +734,7 @@ def main():
 
         # KPI-rader (olika för VC vs Rehab)
         if not is_rehab:
-            # VC: Visa Listning, ACG Casemix, Rehab-poäng
+            # VC: Visa Listning, ACG Casemix, FTE
             col1, col2, col3 = st.columns(3)
 
             # Listning
@@ -725,16 +761,17 @@ def main():
                 st.metric("Casemix", f"{actual:.2f}", f"{avv:+.2f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:.2f}")
 
-            # Rehab Poäng (från KPI-fil)
+            # FTE Total
             with col3:
-                st.markdown("#### 💪 Rehab Poäng")
-                actual = current_data.get('rehab_poang_kpi', 0)
+                st.markdown("#### 👔 FTE Total")
+                actual = current_data['fte']['actual']
+                budget = current_data['fte']['budget']
+                avv = actual - budget
+                avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                traffic, _ = get_traffic_light(avv_pct, reverse=True)
 
-                if actual > 0:
-                    st.metric("Poäng (KPI-fil)", f"{int(actual):,}")
-                    st.markdown("📊 Från KPIer Stor-GBG")
-                else:
-                    st.info("Ingen Rehab-verksamhet")
+                st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
+                st.markdown(f"{traffic} Budget: {budget:.1f}")
 
         else:
             # REHAB: Visa Intäkter (P&L), Rehab-poäng (KPI), TeamBesök (KPI), FTE, Personalkostnad

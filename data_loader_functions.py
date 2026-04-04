@@ -22,7 +22,7 @@ KST_TO_KPINAME = {
     '104': 'Omtanken Vårdcentral Majorna',
     '106': 'Omtanken Vårdcentral Landala',
     '107': 'Omtanken Vårdcentral Pedagogen Park',
-    '108-109': 'Omtanken Vårdcentral Åby',  # Åby + Källered
+    '108-109': 'Omtanken Vårdcentral Åby',  # Åby + Kållered
     '110': 'Omtanken Vårdcentral Kviberg',
     '111': 'Omtanken Vårdcentral Olskroken',
     '302-303': 'Kvarterskliniken Avenyn',  # Avenyn + Lorensberg
@@ -105,6 +105,10 @@ def load_kpi_data_from_file(enhet_kst, manad_str, base_path=None):
     """
     Hämtar Listning Actual och ACG Casemix Actual från KPIer Stor-GBG.xlsx
 
+    OBS: Slår ihop data för kombinerade enheter:
+    - 108-109 (Åby-Kållered): Åby + Kållered
+    - 302-303 (Avenyn-Lorensberg): Avenyn + Lorensberg
+
     Args:
         enhet_kst: '102', '103', '015', etc
         manad_str: '2026-01', '2026-02', etc
@@ -135,49 +139,163 @@ def load_kpi_data_from_file(enhet_kst, manad_str, base_path=None):
         period = int(year + month)
 
         # LISTNING ACTUAL: Rad 322-336, kolumner 3-4 för 202601-202602
-        # Rad 322 = Rubrik ["Listning", "förändring", "202601", "202602", ...]
-        # Rad 323-336 = Enhetsdata
 
         listning_actual = 0
-        short_name = KST_TO_SHORTNAME.get(enhet_kst)
 
-        if short_name:
-            # Hitta kolumn-index för rätt period
-            header_row_idx = 322
-            col_idx = None
-            for col in range(1, 10):
-                val = ws.cell(header_row_idx, col).value
-                if val and str(val) == str(period):
-                    col_idx = col
-                    break
+        # Hitta kolumn-index för rätt period
+        header_row_idx = 322
+        col_idx = None
+        for col in range(1, 10):
+            val = ws.cell(header_row_idx, col).value
+            if val and str(val) == str(period):
+                col_idx = col
+                break
 
-            if col_idx:
-                # Hitta rad för enheten
+        if col_idx:
+            # Specialhantering för kombinerade enheter
+            if enhet_kst == '108-109':
+                # Åby + Kållered (Omtanken Vårdcentral Åby + Omtanken Vårdcentral Kållered)
+                listning_aby = 0
+                listning_kallered = 0
                 for row_idx in range(323, 337):
                     cell_val = ws.cell(row_idx, 1).value
-                    if cell_val and short_name in str(cell_val):
-                        listning_val = ws.cell(row_idx, col_idx).value
-                        listning_actual = int(listning_val) if pd.notna(listning_val) else 0
-                        break
+                    if cell_val:
+                        cell_str = str(cell_val).strip()
+                        # Åby (men inte Kållered)
+                        if 'Åby' in cell_str and 'Kållered' not in cell_str:
+                            listning_val = ws.cell(row_idx, col_idx).value
+                            listning_aby = int(listning_val) if pd.notna(listning_val) else 0
+                        # Kållered
+                        elif 'Kållered' in cell_str:
+                            listning_val = ws.cell(row_idx, col_idx).value
+                            listning_kallered = int(listning_val) if pd.notna(listning_val) else 0
+                listning_actual = listning_aby + listning_kallered
+
+            elif enhet_kst == '302-303':
+                # Avenyn + Lorensberg (Kvarterskliniken Avenyn + Kvarterskliniken Lorensberg)
+                listning_avenyn = 0
+                listning_lorensberg = 0
+                for row_idx in range(323, 337):
+                    cell_val = ws.cell(row_idx, 1).value
+                    if cell_val:
+                        cell_str = str(cell_val).strip()
+                        # Kvarterskliniken Avenyn (men inte Lorensberg)
+                        if 'Avenyn' in cell_str and 'Lorensberg' not in cell_str:
+                            listning_val = ws.cell(row_idx, col_idx).value
+                            listning_avenyn = int(listning_val) if pd.notna(listning_val) else 0
+                        # Kvarterskliniken Lorensberg
+                        elif 'Lorensberg' in cell_str:
+                            listning_val = ws.cell(row_idx, col_idx).value
+                            listning_lorensberg = int(listning_val) if pd.notna(listning_val) else 0
+                listning_actual = listning_avenyn + listning_lorensberg
+
+            else:
+                # Normal enhet
+                short_name = KST_TO_SHORTNAME.get(enhet_kst)
+                if short_name:
+                    for row_idx in range(323, 337):
+                        cell_val = ws.cell(row_idx, 1).value
+                        if cell_val and short_name in str(cell_val):
+                            listning_val = ws.cell(row_idx, col_idx).value
+                            listning_actual = int(listning_val) if pd.notna(listning_val) else 0
+                            break
 
         # ACG CASEMIX ACTUAL: Rad 153-168, kolumn 27-28 för 202601-202602
-        # Rad 153 = Rubrik ["ACG casemix", "202312", "202401", ..., kolumn 27=202601, kolumn 28=202602]
 
         acg_casemix_actual = 0
-        full_name = KST_TO_KPINAME.get(enhet_kst)
+        casemix_col = 27 if period == 202601 else (28 if period == 202602 else None)
 
-        if full_name:
-            # Kolumn 27 = 202601, Kolumn 28 = 202602
-            casemix_col = 27 if period == 202601 else (28 if period == 202602 else None)
+        if casemix_col:
+            # Specialhantering för kombinerade enheter (vägt genomsnitt)
+            if enhet_kst == '108-109':
+                # Åby + Kållered (Omtanken Vårdcentral Åby + Omtanken Vårdcentral Kållered)
+                casemix_aby = 0
+                casemix_kallered = 0
+                listning_aby_casemix = 0
+                listning_kallered_casemix = 0
 
-            if casemix_col:
-                # Hitta rad för enheten (rad 154-168)
                 for row_idx in range(154, 169):
                     cell_val = ws.cell(row_idx, 1).value
-                    if cell_val and full_name in str(cell_val):
-                        casemix_val = ws.cell(row_idx, casemix_col).value
-                        acg_casemix_actual = float(casemix_val) if pd.notna(casemix_val) else 0
-                        break
+                    if cell_val:
+                        cell_str = str(cell_val).strip()
+                        # Åby (men inte Kållered)
+                        if 'Åby' in cell_str and 'Kållered' not in cell_str:
+                            casemix_val = ws.cell(row_idx, casemix_col).value
+                            casemix_aby = float(casemix_val) if pd.notna(casemix_val) else 0
+                            # Hämta listning från rad 198-212
+                            for list_row in range(199, 213):
+                                list_cell = ws.cell(list_row, 1).value
+                                if list_cell:
+                                    list_cell_str = str(list_cell).strip()
+                                    if 'Åby' in list_cell_str and 'Kållered' not in list_cell_str:
+                                        list_val = ws.cell(list_row, casemix_col).value
+                                        listning_aby_casemix = int(list_val) if pd.notna(list_val) else 0
+                                        break
+                        # Kållered
+                        elif 'Kållered' in cell_str:
+                            casemix_val = ws.cell(row_idx, casemix_col).value
+                            casemix_kallered = float(casemix_val) if pd.notna(casemix_val) else 0
+                            for list_row in range(199, 213):
+                                list_cell = ws.cell(list_row, 1).value
+                                if list_cell and 'Kållered' in str(list_cell):
+                                    list_val = ws.cell(list_row, casemix_col).value
+                                    listning_kallered_casemix = int(list_val) if pd.notna(list_val) else 0
+                                    break
+
+                # Beräkna vägt genomsnitt
+                total_listning = listning_aby_casemix + listning_kallered_casemix
+                if total_listning > 0:
+                    acg_casemix_actual = (casemix_aby * listning_aby_casemix + casemix_kallered * listning_kallered_casemix) / total_listning
+
+            elif enhet_kst == '302-303':
+                # Avenyn + Lorensberg (Kvarterskliniken Avenyn + Kvarterskliniken Lorensberg)
+                casemix_avenyn = 0
+                casemix_lorensberg = 0
+                listning_avenyn_casemix = 0
+                listning_lorensberg_casemix = 0
+
+                for row_idx in range(154, 169):
+                    cell_val = ws.cell(row_idx, 1).value
+                    if cell_val:
+                        cell_str = str(cell_val).strip()
+                        # Kvarterskliniken Avenyn (men inte Lorensberg)
+                        if 'Avenyn' in cell_str and 'Lorensberg' not in cell_str:
+                            casemix_val = ws.cell(row_idx, casemix_col).value
+                            casemix_avenyn = float(casemix_val) if pd.notna(casemix_val) else 0
+                            for list_row in range(199, 213):
+                                list_cell = ws.cell(list_row, 1).value
+                                if list_cell:
+                                    list_cell_str = str(list_cell).strip()
+                                    if 'Avenyn' in list_cell_str and 'Lorensberg' not in list_cell_str:
+                                        list_val = ws.cell(list_row, casemix_col).value
+                                        listning_avenyn_casemix = int(list_val) if pd.notna(list_val) else 0
+                                        break
+                        # Kvarterskliniken Lorensberg
+                        elif 'Lorensberg' in cell_str:
+                            casemix_val = ws.cell(row_idx, casemix_col).value
+                            casemix_lorensberg = float(casemix_val) if pd.notna(casemix_val) else 0
+                            for list_row in range(199, 213):
+                                list_cell = ws.cell(list_row, 1).value
+                                if list_cell and 'Lorensberg' in str(list_cell):
+                                    list_val = ws.cell(list_row, casemix_col).value
+                                    listning_lorensberg_casemix = int(list_val) if pd.notna(list_val) else 0
+                                    break
+
+                # Beräkna vägt genomsnitt
+                total_listning = listning_avenyn_casemix + listning_lorensberg_casemix
+                if total_listning > 0:
+                    acg_casemix_actual = (casemix_avenyn * listning_avenyn_casemix + casemix_lorensberg * listning_lorensberg_casemix) / total_listning
+
+            else:
+                # Normal enhet
+                full_name = KST_TO_KPINAME.get(enhet_kst)
+                if full_name:
+                    for row_idx in range(154, 169):
+                        cell_val = ws.cell(row_idx, 1).value
+                        if cell_val and full_name in str(cell_val):
+                            casemix_val = ws.cell(row_idx, casemix_col).value
+                            acg_casemix_actual = float(casemix_val) if pd.notna(casemix_val) else 0
+                            break
 
         wb.close()
 
