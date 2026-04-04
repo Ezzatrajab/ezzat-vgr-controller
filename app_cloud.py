@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Import data loader functions
 try:
-    from data_loader_functions import load_all_data_for_enhet, load_rehab_poang_budget
+    from data_loader_functions import load_all_data_for_enhet
     from rehab_poang_loader import load_rehab_poang_och_top_performers
 except ImportError as e:
     st.error(f"Kunde inte importera data_loader_functions eller rehab_poang_loader: {e}")

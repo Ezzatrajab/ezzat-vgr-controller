@@ -320,6 +320,61 @@ def load_fte_budget(enhet_kst, manad_str, base_path=None):
         return 0.0
 
 
+def load_rehab_poang_budget(enhet_kst, manad_str, base_path=None):
+    """
+    Hämtar budgeterade Rehab-poäng från "Intäkt Budget Rehab"
+    OBS: Endast för Rehab-enheter (601, 602, 603, 604, 605, 607, 660, 715)
+
+    Args:
+        enhet_kst: '601', '602', etc
+        manad_str: '2026-01', '2026-02' etc
+        base_path: Bas-sökväg till data-mappen
+
+    Returns:
+        dict: {
+            'maaltal': float (Måltal per prestationsanställd),
+            'antal_anstallda': float (Antal Prestationsanställda),
+            'budgeterad_intakt': float (Intäkt konto 3053)
+        }
+    """
+    try:
+        # Endast för Rehab-enheter
+        if enhet_kst not in ['601', '602', '603', '604', '605', '607', '660', '715']:
+            return {'maaltal': 0, 'antal_anstallda': 0, 'budgeterad_intakt': 0}
+
+        paths = get_file_paths(enhet_kst, base_path)
+        df = pd.read_excel(paths['intakt_budget'])
+
+        # Konvertera månad till månad-namn
+        year, month = manad_str.split('-')
+        month_num = int(month)
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December']
+        month_name = month_names[month_num - 1]
+
+        if month_name not in df.columns:
+            print(f"Kolumn {month_name} finns inte i Intäkt Budget Rehab för {enhet_kst}")
+            return {'maaltal': 0, 'antal_anstallda': 0, 'budgeterad_intakt': 0}
+
+        # Rad 2 = Måltal per prestationsanställd
+        # Rad 3 = Antal Prestationsanställda
+        # Rad 4 = Intäkt konto 3053
+
+        maaltal = df.iloc[2][month_name] if pd.notna(df.iloc[2][month_name]) else 0
+        antal_anstallda = df.iloc[3][month_name] if pd.notna(df.iloc[3][month_name]) else 0
+        budgeterad_intakt = df.iloc[4][month_name] if pd.notna(df.iloc[4][month_name]) else 0
+
+        return {
+            'maaltal': float(maaltal),
+            'antal_anstallda': float(antal_anstallda),
+            'budgeterad_intakt': float(budgeterad_intakt)
+        }
+
+    except Exception as e:
+        print(f"Fel vid läsning av Rehab poäng budget för {enhet_kst}, {manad_str}: {e}")
+        return {'maaltal': 0, 'antal_anstallda': 0, 'budgeterad_intakt': 0}
+
+
 def load_personalkostnad(enhet_kst, manad_str, base_path=None):
     """Hämtar personalkostnader från P&L Actual och P&L Budget"""
     try:
@@ -407,29 +462,44 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
             'listning_actual': int,
             'listning_budget': int,
             'acg_casemix_actual': float,
-            'acg_casemix_budget': float
+            'acg_casemix_budget': float,
+            'rehab_budget': dict (endast för Rehab-enheter)
         }
     """
-    # FTE och Personalkostnad
+    # FTE och Personalkostnad (samma för alla enheter)
     fte_actual = load_fte_actual(enhet_kst, manad_str, base_path)
     fte_budget = load_fte_budget(enhet_kst, manad_str, base_path)
 
     personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
 
-    # VC-data från KPIer och Budget-filer
-    kpi_data = load_kpi_data_from_file(enhet_kst, manad_str, base_path)
-    budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
-
-    return {
+    # Bas-data som returneras
+    data = {
         'fte_actual': fte_actual,
         'fte_budget': fte_budget,
         'personalkostnad_actual': personalkostnad['actual'],
         'personalkostnad_budget': personalkostnad['budget'],
-        'listning_actual': kpi_data['listning_actual'],
-        'listning_budget': budget_data['listning'],
-        'acg_casemix_actual': kpi_data['acg_casemix_actual'],
-        'acg_casemix_budget': budget_data['acg_casemix']
     }
+
+    # Kolla om det är en Rehab-enhet
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
+        # Rehab-enhet: Lägg till Rehab-budget
+        data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
+        # Sätt 0 för VC-relaterade KPIer
+        data['listning_actual'] = 0
+        data['listning_budget'] = 0
+        data['acg_casemix_actual'] = 0
+        data['acg_casemix_budget'] = 0
+    else:
+        # VC-enhet: Hämta listning och casemix från KPIer och Budget-filer
+        kpi_data = load_kpi_data_from_file(enhet_kst, manad_str, base_path)
+        budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
+
+        data['listning_actual'] = kpi_data['listning_actual']
+        data['listning_budget'] = budget_data['listning']
+        data['acg_casemix_actual'] = kpi_data['acg_casemix_actual']
+        data['acg_casemix_budget'] = budget_data['acg_casemix']
+
+    return data
 
 
 # ========================================
