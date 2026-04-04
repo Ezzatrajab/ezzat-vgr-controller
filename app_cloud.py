@@ -450,12 +450,33 @@ def get_current_data(enhet_kst, manad):
         'budget': real_data['personalkostnad_budget']
     }
 
-    # För VC-enheter: Läs listning, ACG poäng och casemix från VC-budget
-    if 'vc_budget' in real_data:
+    # För VC-enheter: Läs listning, ACG poäng från actual OCH budget
+    if 'vc_actual' in real_data and 'vc_budget' in real_data:
+        vc_actual = real_data['vc_actual']
         vc_budget = real_data['vc_budget']
-        base_data['listning'] = {'actual': vc_budget['listning'], 'budget': vc_budget['listning']}
-        base_data['acg_poang'] = {'actual': vc_budget['acg_poang'], 'budget': vc_budget['acg_poang']}
-        base_data['acg_casemix'] = {'actual': vc_budget['acg_casemix'], 'budget': vc_budget['acg_casemix']}
+
+        base_data['listning'] = {
+            'actual': vc_actual['listning'],
+            'budget': vc_budget['listning']
+        }
+        base_data['acg_poang'] = {
+            'actual': vc_actual['acg_poang'],
+            'budget': vc_budget['acg_poang']
+        }
+        base_data['acg_casemix'] = {
+            'actual': vc_budget['acg_casemix'],  # Budget-värde, beräknas inte från actual än
+            'budget': vc_budget['acg_casemix']
+        }
+
+        # Spara även intäkter från P&L
+        base_data['intakter_3010'] = {
+            'actual': vc_actual['intakt_3010'],
+            'budget': 0  # Budget finns i VC-budgetfilen om vi vill läsa den
+        }
+        base_data['intakter_3020'] = {
+            'actual': vc_actual['intakt_3020'],
+            'budget': 0
+        }
     else:
         # Fallback till 0 om vc_budget inte finns
         if 'listning' not in base_data:

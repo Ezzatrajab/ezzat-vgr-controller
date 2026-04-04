@@ -290,6 +290,108 @@ def load_personalkostnad(enhet_kst, manad_str, base_path=None):
         return {'actual': 0, 'budget': 0}
 
 
+def load_vc_actual_from_pl(enhet_kst, manad_str, base_path=None):
+    """
+    Beräknar actual-värden för VC från P&L Actual + Budget-fil
+
+    Args:
+        enhet_kst: '102', '103', '015', etc (VC-enheter)
+        manad_str: '2026-01', '2026-02' etc
+        base_path: Bas-sökväg till data-mappen
+
+    Returns:
+        dict: {
+            'listning': int,
+            'acg_poang': float,
+            'intakt_3010': float,
+            'intakt_3020': float
+        }
+    """
+    try:
+        paths = get_file_paths(enhet_kst, base_path)
+
+        # Läs P&L Actual
+        df_pl = pd.read_excel(paths['pl_actual'])
+
+        # Konvertera månad till period-nummer
+        year, month = manad_str.split('-')
+        manad_num = int(year) * 100 + int(month)
+
+        # Hitta rätt kolumn för månaden
+        header_row = df_pl.iloc[0]
+        col_idx = None
+        for col in df_pl.columns:
+            if 'Selected Period' in str(col):
+                val = header_row[col]
+                if pd.notna(val) and int(val) == manad_num:
+                    col_idx = col
+                    break
+
+        if col_idx is None:
+            return {'listning': 0, 'acg_poang': 0, 'intakt_3010': 0, 'intakt_3020': 0}
+
+        # Hitta intäktsrader
+        intakt_3010 = 0
+        intakt_3020 = 0
+
+        for idx, row in df_pl.iterrows():
+            account_name = str(row.get('Unnamed: 3', ''))
+            if '3010' in account_name:
+                intakt_3010 = float(row[col_idx]) if pd.notna(row.get(col_idx)) else 0
+            elif '3020' in account_name:
+                intakt_3020 = float(row[col_idx]) if pd.notna(row.get(col_idx)) else 0
+
+        # Läs budget-fil för att få kronor per poäng och snitt poäng
+        vc_files = glob.glob(os.path.join(os.path.dirname(paths['pl_actual']), 'Intäkt Budget VC*.xlsx'))
+
+        if not vc_files:
+            return {'listning': 0, 'acg_poang': 0, 'intakt_3010': intakt_3010, 'intakt_3020': intakt_3020}
+
+        df_budget = pd.read_excel(vc_files[0], header=None)
+
+        # Hitta rätt kolumn baserat på månad-namn
+        month_num = int(month)
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December']
+        month_name = month_names[month_num - 1]
+
+        col_idx_budget = None
+        for i, val in enumerate(df_budget.iloc[0]):
+            if val == month_name:
+                col_idx_budget = i
+                break
+
+        if col_idx_budget is None:
+            return {'listning': 0, 'acg_poang': 0, 'intakt_3010': intakt_3010, 'intakt_3020': intakt_3020}
+
+        # Läs parametrar från budget-filen
+        kr_per_poang = df_budget.iloc[2, col_idx_budget] if pd.notna(df_budget.iloc[2, col_idx_budget]) else 531
+        snitt_poang = df_budget.iloc[3, col_idx_budget] if pd.notna(df_budget.iloc[3, col_idx_budget]) else 0.2
+
+        # Beräkna actual-värden
+        # Antal listade = (3010-intäkt / kr per poäng) / snitt poäng
+        listning_actual = 0
+        if kr_per_poang > 0 and snitt_poang > 0:
+            listningspoang = intakt_3010 / kr_per_poang
+            listning_actual = int(listningspoang / snitt_poang)
+
+        # ACG Poäng = 3020-intäkt / kr per poäng
+        acg_poang_actual = 0
+        if kr_per_poang > 0:
+            acg_poang_actual = intakt_3020 / kr_per_poang
+
+        return {
+            'listning': listning_actual,
+            'acg_poang': acg_poang_actual,
+            'intakt_3010': intakt_3010,
+            'intakt_3020': intakt_3020
+        }
+
+    except Exception as e:
+        print(f"Fel vid beräkning av VC actual för {enhet_kst}, {manad_str}: {e}")
+        return {'listning': 0, 'acg_poang': 0, 'intakt_3010': 0, 'intakt_3020': 0}
+
+
 def load_vc_budget(enhet_kst, manad_str, base_path=None):
     """
     Hämtar budget-data för VC från "Intäkt Budget VC"
@@ -400,7 +502,8 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
     if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
         data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
     else:
-        # Om det är en VC-enhet, lägg till VC-budget (listning, ACG)
+        # Om det är en VC-enhet, lägg till både actual och budget
+        data['vc_actual'] = load_vc_actual_from_pl(enhet_kst, manad_str, base_path)
         data['vc_budget'] = load_vc_budget(enhet_kst, manad_str, base_path)
 
     return data
