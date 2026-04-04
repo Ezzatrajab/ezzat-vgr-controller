@@ -1,9 +1,9 @@
 """
-Ezzat's Controlling System - Cloud Version v3.0
+Ezzat's Controlling System - Cloud Version v3.1
 Controller: Ezzat Rajab
-Uppdaterad: 2026-04-02
-Multi-enhet support: 102, 103, 601, 602
-RÄTT DATA från Excel-filer!
+Uppdaterad: 2026-04-04
+Multi-enhet support: Alla 20 enheter
+RÄTT DATA från Excel-filer med ACTUAL vs BUDGET!
 """
 
 import streamlit as st
@@ -68,7 +68,7 @@ st.markdown("""
 # DATAINLÄSNING FRÅN EXCEL-FILER
 # ========================================
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)  # 5 minuter cache istället för 1 timme
 def load_rehab_intakter_from_pl(enhet_kst, manad_str):
     """
     Läser Rehab-intäkter (Revenue Total) från P&L Actual och P&L Budget filer.
@@ -135,7 +135,7 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         return {'actual': 0, 'budget': 0}
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)  # 5 minuter cache
 def load_kpi_data():
     """
     Läser KPI-data från KPIer Stor-GBG.xlsx
