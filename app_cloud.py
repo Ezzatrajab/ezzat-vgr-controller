@@ -1,9 +1,10 @@
 """
-Ezzat's Controlling System - Cloud Version v3.1
+Ezzat's Controlling System - Cloud Version v4.0
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-04
 Multi-enhet support: Alla 20 enheter
-RÄTT DATA från Excel-filer med ACTUAL vs BUDGET!
+RÄTT DATAKÄLLOR: KPIer Stor-GBG.xlsx + Budget-filer
+KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 """
 
 import streamlit as st
@@ -441,50 +442,25 @@ def get_current_data(enhet_kst, manad):
 
     # Uppdatera med faktiska värden
     base_data['fte'] = {
-        'actual': real_data['fte_actual'],
-        'budget': real_data['fte_budget']
+        'actual': real_data.get('fte_actual', 0),
+        'budget': real_data.get('fte_budget', 0)
     }
 
     base_data['personalkostnad'] = {
-        'actual': real_data['personalkostnad_actual'],
-        'budget': real_data['personalkostnad_budget']
+        'actual': real_data.get('personalkostnad_actual', 0),
+        'budget': real_data.get('personalkostnad_budget', 0)
     }
 
-    # För VC-enheter: Läs listning, ACG poäng från actual OCH budget
-    if 'vc_actual' in real_data and 'vc_budget' in real_data:
-        vc_actual = real_data['vc_actual']
-        vc_budget = real_data['vc_budget']
+    # För VC-enheter: Läs listning och ACG casemix från KPIer-fil och budget-fil
+    base_data['listning'] = {
+        'actual': real_data.get('listning_actual', 0),
+        'budget': real_data.get('listning_budget', 0)
+    }
 
-        base_data['listning'] = {
-            'actual': vc_actual['listning'],
-            'budget': vc_budget['listning']
-        }
-        base_data['acg_poang'] = {
-            'actual': vc_actual['acg_poang'],
-            'budget': vc_budget['acg_poang']
-        }
-        base_data['acg_casemix'] = {
-            'actual': vc_budget['acg_casemix'],  # Budget-värde, beräknas inte från actual än
-            'budget': vc_budget['acg_casemix']
-        }
-
-        # Spara även intäkter från P&L
-        base_data['intakter_3010'] = {
-            'actual': vc_actual['intakt_3010'],
-            'budget': 0  # Budget finns i VC-budgetfilen om vi vill läsa den
-        }
-        base_data['intakter_3020'] = {
-            'actual': vc_actual['intakt_3020'],
-            'budget': 0
-        }
-    else:
-        # Fallback till 0 om vc_budget inte finns
-        if 'listning' not in base_data:
-            base_data['listning'] = {'actual': 0, 'budget': 0}
-        if 'acg_poang' not in base_data:
-            base_data['acg_poang'] = {'actual': 0, 'budget': 0}
-        if 'acg_casemix' not in base_data:
-            base_data['acg_casemix'] = {'actual': 0, 'budget': 0}
+    base_data['acg_casemix'] = {
+        'actual': real_data.get('acg_casemix_actual', 0),
+        'budget': real_data.get('acg_casemix_budget', 0)
+    }
 
     # Default-värden för intäkter
     if 'intakter_totalt' not in base_data:
@@ -722,8 +698,8 @@ def main():
 
         # KPI-rader (olika för VC vs Rehab)
         if not is_rehab:
-            # VC: Visa Listning, ACG, Casemix, Rehab-poäng
-            col1, col2, col3, col4 = st.columns(4)
+            # VC: Visa Listning, ACG Casemix, Rehab-poäng
+            col1, col2, col3 = st.columns(3)
 
             # Listning
             with col1:
@@ -737,20 +713,8 @@ def main():
                 st.metric("Antal listade", f"{actual:,}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:,}")
 
-            # ACG Poäng
-            with col2:
-                st.markdown("#### 🏥 ACG Poäng")
-                actual = current_data['acg_poang']['actual']
-                budget = current_data['acg_poang']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
-
-                st.metric("ACG Poäng", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,.0f}")
-
             # ACG Casemix
-            with col3:
+            with col2:
                 st.markdown("#### 📊 ACG Casemix")
                 actual = current_data['acg_casemix']['actual']
                 budget = current_data['acg_casemix']['budget']
@@ -762,7 +726,7 @@ def main():
                 st.markdown(f"{traffic} Budget: {budget:.2f}")
 
             # Rehab Poäng (från KPI-fil)
-            with col4:
+            with col3:
                 st.markdown("#### 💪 Rehab Poäng")
                 actual = current_data.get('rehab_poang_kpi', 0)
 
