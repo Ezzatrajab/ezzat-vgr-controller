@@ -5,6 +5,7 @@ Hämtar RÄTT data från Excel-filer istället för hårdkodad data
 
 import pandas as pd
 import os
+import glob
 from datetime import datetime
 
 def get_file_paths(enhet_kst, base_path=None):
@@ -289,6 +290,83 @@ def load_personalkostnad(enhet_kst, manad_str, base_path=None):
         return {'actual': 0, 'budget': 0}
 
 
+def load_vc_budget(enhet_kst, manad_str, base_path=None):
+    """
+    Hämtar budget-data för VC från "Intäkt Budget VC"
+
+    Args:
+        enhet_kst: '102', '103', '015', etc (VC-enheter)
+        manad_str: '2026-01', '2026-02' etc
+        base_path: Bas-sökväg till data-mappen
+
+    Returns:
+        dict: {
+            'listning': int,
+            'acg_poang': float,
+            'acg_casemix': float
+        }
+    """
+    try:
+        # Lista över VC-enheter som har Intäkt Budget VC-fil
+        vc_enheter = ['102', '103', '104', '106', '107', '108-109', '110', '111', '302-303', '304', '015', '4020']
+
+        if enhet_kst not in vc_enheter:
+            return {'listning': 0, 'acg_poang': 0, 'acg_casemix': 0}
+
+        # Hitta rätt fil
+        if base_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            base_path = os.path.join(script_dir, 'data')
+
+        enhet_path = os.path.join(base_path, enhet_kst)
+
+        # Hitta Intäkt Budget VC-filen (olika nummer för olika enheter)
+        vc_files = glob.glob(os.path.join(enhet_path, 'Intäkt Budget VC*.xlsx'))
+
+        if not vc_files:
+            print(f"Ingen Intäkt Budget VC-fil hittades för {enhet_kst}")
+            return {'listning': 0, 'acg_poang': 0, 'acg_casemix': 0}
+
+        df = pd.read_excel(vc_files[0], header=None)
+
+        # Konvertera månad till månad-namn
+        year, month = manad_str.split('-')
+        month_num = int(month)
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December']
+        month_name = month_names[month_num - 1]
+
+        # Hitta kolumn-index för månaden (rad 0 innehåller månadnamn)
+        col_idx = None
+        for i, val in enumerate(df.iloc[0]):
+            if val == month_name:
+                col_idx = i
+                break
+
+        if col_idx is None:
+            print(f"Månad {month_name} hittades inte i Intäkt Budget VC för {enhet_kst}")
+            return {'listning': 0, 'acg_poang': 0, 'acg_casemix': 0}
+
+        # Läs värden från rätt rader:
+        # Rad 5 (index 5): ACG Poäng
+        # Rad 7 (index 7): ACG casemix % (Vårdtyngd)
+        # Rad 8 (index 8): Antal listade patienter
+
+        acg_poang = df.iloc[5, col_idx] if pd.notna(df.iloc[5, col_idx]) else 0
+        acg_casemix = df.iloc[7, col_idx] if pd.notna(df.iloc[7, col_idx]) else 0
+        listning = df.iloc[8, col_idx] if pd.notna(df.iloc[8, col_idx]) else 0
+
+        return {
+            'listning': int(listning),
+            'acg_poang': float(acg_poang),
+            'acg_casemix': float(acg_casemix)
+        }
+
+    except Exception as e:
+        print(f"Fel vid läsning av VC-budget för {enhet_kst}, {manad_str}: {e}")
+        return {'listning': 0, 'acg_poang': 0, 'acg_casemix': 0}
+
+
 def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
     """
     Hämtar ALL data för en enhet och månad
@@ -304,7 +382,8 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
             'fte_budget': float,
             'personalkostnad_actual': float,
             'personalkostnad_budget': float,
-            'rehab_budget': dict (endast för Rehab-enheter)
+            'rehab_budget': dict (endast för Rehab-enheter),
+            'vc_budget': dict (endast för VC-enheter)
         }
     """
     data = {
@@ -318,8 +397,11 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
     data['personalkostnad_budget'] = personalkostnad['budget']
 
     # Om det är en Rehab-enhet, lägg till Rehab-budget
-    if enhet_kst in ['601', '602']:
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
         data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
+    else:
+        # Om det är en VC-enhet, lägg till VC-budget (listning, ACG)
+        data['vc_budget'] = load_vc_budget(enhet_kst, manad_str, base_path)
 
     return data
 

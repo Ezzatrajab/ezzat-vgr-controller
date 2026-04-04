@@ -450,14 +450,22 @@ def get_current_data(enhet_kst, manad):
         'budget': real_data['personalkostnad_budget']
     }
 
-    # Lägg till default-värden för alla keys som UI:et förväntar sig
-    # (för VC-enheter som inte har all data än)
-    if 'listning' not in base_data:
-        base_data['listning'] = {'actual': 0, 'budget': 0}
-    if 'acg_poang' not in base_data:
-        base_data['acg_poang'] = {'actual': 0, 'budget': 0}
-    if 'acg_casemix' not in base_data:
-        base_data['acg_casemix'] = {'actual': 0, 'budget': 0}
+    # För VC-enheter: Läs listning, ACG poäng och casemix från VC-budget
+    if 'vc_budget' in real_data:
+        vc_budget = real_data['vc_budget']
+        base_data['listning'] = {'actual': vc_budget['listning'], 'budget': vc_budget['listning']}
+        base_data['acg_poang'] = {'actual': vc_budget['acg_poang'], 'budget': vc_budget['acg_poang']}
+        base_data['acg_casemix'] = {'actual': vc_budget['acg_casemix'], 'budget': vc_budget['acg_casemix']}
+    else:
+        # Fallback till 0 om vc_budget inte finns
+        if 'listning' not in base_data:
+            base_data['listning'] = {'actual': 0, 'budget': 0}
+        if 'acg_poang' not in base_data:
+            base_data['acg_poang'] = {'actual': 0, 'budget': 0}
+        if 'acg_casemix' not in base_data:
+            base_data['acg_casemix'] = {'actual': 0, 'budget': 0}
+
+    # Default-värden för intäkter
     if 'intakter_totalt' not in base_data:
         base_data['intakter_totalt'] = {'actual': 0, 'budget': 0}
     if 'intakter_3053' not in base_data:
