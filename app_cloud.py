@@ -768,7 +768,7 @@ def main():
                 budget = current_data['fte']['budget']
                 avv = actual - budget
                 avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct, reverse=True)
+                traffic, _ = get_traffic_light(avv_pct, is_cost=True)
 
                 st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
                 st.markdown(f"{traffic} Budget: {budget:.1f}")
