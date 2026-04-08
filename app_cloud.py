@@ -981,60 +981,60 @@ def main():
 
             # Skapa trend-data för denna enhet
             months = ['Jan', 'Feb', 'Mar']
+            month_keys = ['2026-01', '2026-02', '2026-03']
 
-            # FTE Trend
-            fte_actual = [enhet_info['månader']['2026-01']['fte']['actual'],
-                         enhet_info['månader']['2026-02']['fte']['actual'],
-                         enhet_info['månader']['2026-03']['fte']['actual']]
-            fte_budget = [enhet_info['månader']['2026-01']['fte']['budget'],
-                         enhet_info['månader']['2026-02']['fte']['budget'],
-                         enhet_info['månader']['2026-03']['fte']['budget']]
+            # Ladda data för alla tre månader
+            try:
+                month_data = []
+                for m in month_keys:
+                    data = get_current_data(vald_enhet_kst, m)
+                    month_data.append(data)
 
-            fig = go.Figure()
-            fig.add_trace(go.Bar(x=months, y=fte_actual,
-                               name='Actual FTE', marker_color='#FF6B6B'))
-            fig.add_trace(go.Scatter(x=months, y=fte_budget,
-                                   name='Budget FTE', mode='lines+markers',
-                                   line=dict(color='#4ECDC4', width=3)))
-            fig.update_layout(title=f'FTE Trend - {enhet_info["enhet_namn"]}', height=350)
-            st.plotly_chart(fig, use_container_width=True)
+                # FTE Trend
+                fte_actual = [data['fte']['actual'] for data in month_data]
+                fte_budget = [data['fte']['budget'] for data in month_data]
 
-            # Personalkostnad Trend
-            pk_actual = [enhet_info['månader']['2026-01']['personalkostnad']['actual'],
-                        enhet_info['månader']['2026-02']['personalkostnad']['actual'],
-                        enhet_info['månader']['2026-03']['personalkostnad']['actual']]
-            pk_budget = [enhet_info['månader']['2026-01']['personalkostnad']['budget'],
-                        enhet_info['månader']['2026-02']['personalkostnad']['budget'],
-                        enhet_info['månader']['2026-03']['personalkostnad']['budget']]
+                fig = go.Figure()
+                fig.add_trace(go.Bar(x=months, y=fte_actual,
+                                   name='Actual FTE', marker_color='#FF6B6B'))
+                fig.add_trace(go.Scatter(x=months, y=fte_budget,
+                                       name='Budget FTE', mode='lines+markers',
+                                       line=dict(color='#4ECDC4', width=3)))
+                fig.update_layout(title=f'FTE Trend - {enhet_info["enhet_namn"]}', height=350)
+                st.plotly_chart(fig, use_container_width=True)
 
-            fig = go.Figure()
-            fig.add_trace(go.Bar(x=months, y=pk_actual,
-                               name='Actual Kostnad', marker_color='#FF6B6B'))
-            fig.add_trace(go.Scatter(x=months, y=pk_budget,
-                                   name='Budget Kostnad', mode='lines+markers',
-                                   line=dict(color='#4ECDC4', width=3)))
-            fig.update_layout(title='Personalkostnad Trend (kr)', height=350)
-            st.plotly_chart(fig, use_container_width=True)
+                # Personalkostnad Trend
+                pk_actual = [data['personalkostnad']['actual'] for data in month_data]
+                pk_budget = [data['personalkostnad']['budget'] for data in month_data]
 
-            # Intäkter Trend
-            int_actual = [enhet_info['månader']['2026-01']['intakter_totalt']['actual'],
-                         enhet_info['månader']['2026-02']['intakter_totalt']['actual'],
-                         enhet_info['månader']['2026-03']['intakter_totalt']['actual']]
-            int_budget = [enhet_info['månader']['2026-01']['intakter_totalt']['budget'],
-                         enhet_info['månader']['2026-02']['intakter_totalt']['budget'],
-                         enhet_info['månader']['2026-03']['intakter_totalt']['budget']]
+                fig = go.Figure()
+                fig.add_trace(go.Bar(x=months, y=pk_actual,
+                                   name='Actual Kostnad', marker_color='#FF6B6B'))
+                fig.add_trace(go.Scatter(x=months, y=pk_budget,
+                                       name='Budget Kostnad', mode='lines+markers',
+                                       line=dict(color='#4ECDC4', width=3)))
+                fig.update_layout(title='Personalkostnad Trend (kr)', height=350)
+                st.plotly_chart(fig, use_container_width=True)
 
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=months, y=int_actual,
-                                   mode='lines+markers', name='Actual',
-                                   line=dict(color='#FF6B6B', width=3),
-                                   marker=dict(size=10)))
-            fig.add_trace(go.Scatter(x=months, y=int_budget,
-                                   mode='lines+markers', name='Budget',
-                                   line=dict(color='#4ECDC4', width=3),
-                                   marker=dict(size=10)))
-            fig.update_layout(title='Intäkter Trend (kr)', height=350)
-            st.plotly_chart(fig, use_container_width=True)
+                # Intäkter Trend
+                int_actual = [data['intakter_totalt']['actual'] for data in month_data]
+                int_budget = [data['intakter_totalt']['budget'] for data in month_data]
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=months, y=int_actual,
+                                       mode='lines+markers', name='Actual',
+                                       line=dict(color='#FF6B6B', width=3),
+                                       marker=dict(size=10)))
+                fig.add_trace(go.Scatter(x=months, y=int_budget,
+                                       mode='lines+markers', name='Budget',
+                                       line=dict(color='#4ECDC4', width=3),
+                                       marker=dict(size=10)))
+                fig.update_layout(title='Intäkter Trend (kr)', height=350)
+                st.plotly_chart(fig, use_container_width=True)
+
+            except Exception as e:
+                st.error(f"❌ Kunde inte ladda trenddata: {e}")
+                st.info("Kontrollera att data finns för alla tre månader (Jan, Feb, Mar)")
 
     # === VEC KOMMENTARER ===
     elif page == "💬 VEC Kommentarer":
