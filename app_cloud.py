@@ -521,10 +521,12 @@ def get_current_data(enhet_kst, manad):
         try:
             rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
             base_data['rehab_poang_actual'] = rehab_data['total_poang']
+            base_data['rehab_poang_budget'] = rehab_data['budget_poang']
             base_data['top_performers'] = rehab_data['top_performers']
         except Exception as e:
             st.sidebar.warning(f"⚠️ Kunde inte ladda Rehab-poäng: {e}")
             base_data['rehab_poang_actual'] = 0
+            base_data['rehab_poang_budget'] = 0
             base_data['top_performers'] = []
 
         # Hämta KPI-data (för TeamBesök)
@@ -796,9 +798,16 @@ def main():
             with col2:
                 st.markdown("#### 💪 Rehab Poäng")
                 actual = current_data.get('rehab_poang_actual', 0)
+                budget_poang = current_data.get('rehab_poang_budget', 0)
 
-                if actual > 0:
-                    st.metric("Poäng (Actual)", f"{int(actual):,}")
+                if actual > 0 or budget_poang > 0:
+                    # Beräkna avvikelse
+                    avv = actual - budget_poang
+                    avv_pct = (avv / budget_poang * 100) if budget_poang > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct)
+
+                    st.metric("Poäng (Actual)", f"{int(actual):,}", f"{int(avv):+,} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} **Budget:** {int(budget_poang):,} poäng")
                     st.markdown("📊 Från Poänguppföljning Rehab 2026")
 
                     # Visa top performers (≥200 poäng)
@@ -912,28 +921,47 @@ def main():
         with tab1:
             st.markdown(f"### 💰 Personal & Kostnader - {vald_manad_namn}")
 
-            # FTE och Kostnadstabell
-            fte_data = []
-            for kat, values in current_data['fte_breakdown'].items():
-                fte_avv = values['actual'] - values['budget']
-                fte_avv_pct = (fte_avv / values['budget'] * 100) if values['budget'] > 0 else 0
+            # FTE och Personalkostnad översikt
+            col1, col2 = st.columns(2)
 
-                kostnad_avv = values['kostnad_actual'] - values['kostnad_budget']
-                kostnad_avv_pct = (kostnad_avv / values['kostnad_budget'] * 100) if values['kostnad_budget'] > 0 else 0
+            with col1:
+                st.markdown("#### 👥 FTE (Full-Time Equivalent)")
+                fte_actual = current_data['fte']['actual']
+                fte_budget = current_data['fte']['budget']
+                fte_avv = fte_actual - fte_budget
+                fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
 
-                fte_data.append({
-                    'Yrkesgrupp': kat,
-                    'FTE Actual': values['actual'],
-                    'FTE Budget': values['budget'],
-                    'FTE Avv': round(fte_avv, 2),
-                    'FTE Avv %': round(fte_avv_pct, 1),
-                    'Kostnad Actual': f"{values['kostnad_actual']:,.0f}",
-                    'Kostnad Budget': f"{values['kostnad_budget']:,.0f}",
-                    'Kostnad Avv %': round(kostnad_avv_pct, 1)
-                })
+                st.metric("FTE Actual", f"{fte_actual:.1f}", f"{fte_avv:+.1f} ({fte_avv_pct:+.1f}%)")
+                st.markdown(f"**Budget:** {fte_budget:.1f}")
 
-            df_fte = pd.DataFrame(fte_data)
-            st.dataframe(df_fte, use_container_width=True, hide_index=True)
+            with col2:
+                st.markdown("#### 💰 Personalkostnad")
+                pk_actual = current_data['personalkostnad']['actual']
+                pk_budget = current_data['personalkostnad']['budget']
+                pk_avv = pk_actual - pk_budget
+                pk_avv_pct = (pk_avv / pk_budget * 100) if pk_budget > 0 else 0
+
+                st.metric("Kostnad Actual", f"{pk_actual:,.0f} kr", f"{pk_avv:+,.0f} ({pk_avv_pct:+.1f}%)")
+                st.markdown(f"**Budget:** {pk_budget:,.0f} kr")
+
+            st.markdown("---")
+
+            # Sammanfattning tabell
+            st.markdown("#### 📊 Översikt")
+            df_oversikt = pd.DataFrame([{
+                'Kategori': 'FTE',
+                'Actual': f"{fte_actual:.1f}",
+                'Budget': f"{fte_budget:.1f}",
+                'Avvikelse': f"{fte_avv:+.1f}",
+                'Avv %': f"{fte_avv_pct:+.1f}%"
+            }, {
+                'Kategori': 'Personalkostnad',
+                'Actual': f"{pk_actual:,.0f}",
+                'Budget': f"{pk_budget:,.0f}",
+                'Avvikelse': f"{pk_avv:+,.0f}",
+                'Avv %': f"{pk_avv_pct:+.1f}%"
+            }])
+            st.dataframe(df_oversikt, use_container_width=True, hide_index=True)
 
             # Detaljerad analys
             st.markdown("---")

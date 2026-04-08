@@ -17,6 +17,18 @@ KST_TO_SHEET = {
     '715': 'Karlastaden',
 }
 
+# Mapping KST → Enhetens namn i översiktsfliken
+KST_TO_ENHETSNAMN = {
+    '601': 'Frölunda Torget',
+    '602': 'Grimmered',
+    '603': 'Majorna',
+    '604': 'Pedagogen Park',
+    '605': 'Åby',
+    '607': 'Olskroken',
+    '660': 'Avenyn',
+    '715': 'Karlastaden',
+}
+
 # Mapping månad → kolumnindex
 MANAD_TO_COL = {
     '2026-01': 1,   # Jan
@@ -34,6 +46,63 @@ MANAD_TO_COL = {
 }
 
 
+def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
+    """
+    Läser budgeterade Rehab-poäng från fliken "Enheterna AO Stor-GBG"
+
+    Args:
+        enhet_kst: '601', '602', etc
+        manad_str: '2026-01', '2026-02', etc
+        base_path: Bas-sökväg
+
+    Returns:
+        float: Budgeterade poäng för månaden
+    """
+    try:
+        # Hitta filen
+        if base_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, 'data', 'Poänguppföljning Rehab 2026.xlsx')
+            if not os.path.exists(file_path):
+                parent_dir = os.path.dirname(script_dir)
+                file_path = os.path.join(parent_dir, 'Poänguppföljning Rehab 2026.xlsx')
+        else:
+            file_path = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
+
+        if not os.path.exists(file_path):
+            return 0
+
+        # Hämta enhetsnamn och kolumnindex
+        enhetsnamn = KST_TO_ENHETSNAMN.get(enhet_kst)
+        if not enhetsnamn:
+            return 0
+
+        col_idx = MANAD_TO_COL.get(manad_str)
+        if col_idx is None:
+            return 0
+
+        # Läs översiktsfliken
+        df = pd.read_excel(file_path, sheet_name='Enheterna AO Stor-GBG', header=None)
+
+        # Hitta raden med enhetsnamnet
+        for idx in range(len(df)):
+            cell_value = df.iloc[idx, 0]
+            if pd.notna(cell_value) and isinstance(cell_value, str):
+                if enhetsnamn.lower() in cell_value.lower():
+                    # Nästa rad är "Poäng ACTUAL", sedan "Poäng Budget"
+                    budget_row_idx = idx + 2  # +1 för ACTUAL, +2 för Budget
+                    if budget_row_idx < len(df):
+                        budget_value = df.iloc[budget_row_idx, col_idx]
+                        if pd.notna(budget_value) and isinstance(budget_value, (int, float)):
+                            return float(budget_value)
+
+        return 0
+
+    except Exception as e:
+        print(f"Fel vid läsning av Rehab budget för {enhet_kst}, {manad_str}: {e}")
+        return 0
+
+
 def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
     """
     Läser Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
@@ -46,10 +115,13 @@ def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
     Returns:
         dict: {
             'total_poang': float,
+            'budget_poang': float,
             'top_performers': [{'namn': str, 'poang': float}, ...]
         }
     """
     try:
+        # Läs budget först
+        budget_poang = load_rehab_budget_poang(enhet_kst, manad_str, base_path)
         # Hitta filen
         if base_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -111,12 +183,13 @@ def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
 
         return {
             'total_poang': total_poang,
+            'budget_poang': budget_poang,
             'top_performers': top_performers
         }
 
     except Exception as e:
         print(f"Fel vid läsning av Rehab-poäng för {enhet_kst}, {manad_str}: {e}")
-        return {'total_poang': 0, 'top_performers': []}
+        return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
 
 
 # Test-funktion
