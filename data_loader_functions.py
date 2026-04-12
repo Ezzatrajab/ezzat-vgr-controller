@@ -529,20 +529,34 @@ def load_personalkostnad(enhet_kst, manad_str, base_path=None):
         year, month = manad_str.split('-')
         manad_num = int(year) * 100 + int(month)
 
-        # Hitta kolumn för rätt månad
-        period_cols = [col for col in df_actual.columns if 'Selected Period' in str(col)]
-
-        header_row_actual = df_actual.iloc[0]
+        # Hitta kolumn för rätt månad - läs direkt från rad 0 (Year Month No)
+        # Actual och Budget kan ha olika antal kolumner, så hitta separat för varje
+        header_row_actual = df_actual.iloc[0]  # Rad 0 = Year Month No
         header_row_budget = df_budget.iloc[0]
 
-        col_idx = None
-        for col in period_cols:
-            val = header_row_actual[col]
-            if pd.notna(val) and int(val) == manad_num:
-                col_idx = col
-                break
+        col_idx_actual = None
+        for i, val in enumerate(header_row_actual):
+            if pd.notna(val):
+                try:
+                    val_int = int(float(val))
+                    if val_int == manad_num:
+                        col_idx_actual = i
+                        break
+                except (ValueError, TypeError):
+                    continue
 
-        if col_idx is None:
+        col_idx_budget = None
+        for i, val in enumerate(header_row_budget):
+            if pd.notna(val):
+                try:
+                    val_int = int(float(val))
+                    if val_int == manad_num:
+                        col_idx_budget = i
+                        break
+                except (ValueError, TypeError):
+                    continue
+
+        if col_idx_actual is None or col_idx_budget is None:
             return {'actual': 0, 'budget': 0}
 
         # Hitta Medical staff Total
@@ -572,11 +586,11 @@ def load_personalkostnad(enhet_kst, manad_str, base_path=None):
             if cogs_total_actual.empty or cogs_total_budget.empty:
                 return {'actual': 0, 'budget': 0}
 
-            actual_val = cogs_total_actual.iloc[0][col_idx]
-            budget_val = cogs_total_budget.iloc[0][col_idx]
+            actual_val = cogs_total_actual.iloc[0].iloc[col_idx_actual]
+            budget_val = cogs_total_budget.iloc[0].iloc[col_idx_budget]
         else:
-            actual_val = medical_staff_actual.iloc[0][col_idx]
-            budget_val = medical_staff_budget.iloc[0][col_idx]
+            actual_val = medical_staff_actual.iloc[0].iloc[col_idx_actual]
+            budget_val = medical_staff_budget.iloc[0].iloc[col_idx_budget]
 
         return {
             'actual': abs(float(actual_val)) if pd.notna(actual_val) else 0,
@@ -621,17 +635,30 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         except Exception as e:
             print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
 
-    # Personalkostnad: Försök P&L först, sedan INFO.xlsx som fallback
-    personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
-    personalkostnad_actual = personalkostnad['actual']
-    personalkostnad_budget = personalkostnad['budget']
+    # Personalkostnad:
+    # Tätort-enheter: Använd INFO.xlsx för actual (värden i hela kronor), P&L Budget för budget
+    # Stor-Göteborg: Använd P&L Actual och Budget (värden behöver ev multipliceras)
+    tatort_enheter = ['003', '005', '006', '008', '014', '305', '703', '705', '706', '708', '714', '650-670', '713']
 
-    # Om P&L inte gav något (Tätort?), använd INFO.xlsx Medical staff
-    if personalkostnad_actual == 0 and info_data:
+    if enhet_kst in tatort_enheter and info_data:
+        # Tätort: Hämta actual från INFO.xlsx (redan i hela kronor)
         medical_staff = info_data.get('medical_staff_actual', 0)
-        if medical_staff != 0:
-            # Medical staff är negativt i INFO.xlsx, ta absolutvärdet
-            personalkostnad_actual = abs(medical_staff)
+        personalkostnad_actual = abs(medical_staff) if medical_staff != 0 else 0
+
+        # Hämta budget från P&L Budget
+        personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
+        personalkostnad_budget = personalkostnad['budget']
+    else:
+        # Stor-Göteborg: Använd P&L för både actual och budget
+        personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
+        personalkostnad_actual = personalkostnad['actual']
+        personalkostnad_budget = personalkostnad['budget']
+
+        # Fallback till INFO.xlsx om P&L inte gav något
+        if personalkostnad_actual == 0 and info_data:
+            medical_staff = info_data.get('medical_staff_actual', 0)
+            if medical_staff != 0:
+                personalkostnad_actual = abs(medical_staff)
 
     # Bas-data som returneras
     data = {
