@@ -1,10 +1,12 @@
 """
-Ezzat's Controlling System - Cloud Version v5.1
+Ezzat's Controlling System - Cloud Version v5.2
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-12
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
+
+BUGFIX v5.2: Personalkostnad budget för Tätort-enheter nu korrekt
 """
 
 import streamlit as st
