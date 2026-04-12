@@ -1,6 +1,7 @@
 """
 Datahämtningsfunktioner för Ezzat's Controlling System
 RÄTT STRUKTUR baserat på faktiska datakällor
+UPPDATERAD: Använder INFO.xlsx för enklare och mer robust datahämtning
 """
 
 import pandas as pd
@@ -8,6 +9,13 @@ import os
 import glob
 from datetime import datetime
 import openpyxl
+
+# Import INFO loader
+try:
+    from data_loader_INFO_v2 import load_all_kpi_from_info
+except ImportError:
+    print("Varning: Kunde inte importera load_all_kpi_from_info")
+    load_all_kpi_from_info = None
 
 
 # ========================================
@@ -615,18 +623,36 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         'personalkostnad_budget': personalkostnad['budget'],
     }
 
+    # Försök hämta data från INFO.xlsx först (fungerar för ALLA enheter)
+    if load_all_kpi_from_info:
+        try:
+            info_data = load_all_kpi_from_info(enhet_kst, manad_str, base_path)
+            # Använd INFO-data om den finns
+            data['listning_actual'] = int(info_data.get('listning_actual', 0))
+            data['acg_casemix_actual'] = info_data.get('acg_casemix_actual', 0)
+        except Exception as e:
+            print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
+            # Fallback till gamla metoden
+            data['listning_actual'] = 0
+            data['acg_casemix_actual'] = 0
+    else:
+        data['listning_actual'] = 0
+        data['acg_casemix_actual'] = 0
+
     # Kolla om det är en Rehab-enhet
     if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
         # Rehab-enhet: Lägg till Rehab-budget
         data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
-        # Sätt 0 för VC-relaterade KPIer
-        data['listning_actual'] = 0
-        data['listning_budget'] = 0
-        data['acg_casemix_actual'] = 0
-        data['acg_casemix_budget'] = 0
+        # Budget för VC-KPIer (hämta från budget-fil om möjligt)
+        try:
+            budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
+            data['listning_budget'] = budget_data.get('listning_budget', 0)
+            data['acg_casemix_budget'] = budget_data.get('acg_casemix_budget', 0)
+        except:
+            data['listning_budget'] = 0
+            data['acg_casemix_budget'] = 0
     else:
-        # VC-enhet: Hämta listning och casemix från KPIer och Budget-filer
-        kpi_data = load_kpi_data_from_file(enhet_kst, manad_str, base_path)
+        # VC-enhet: Hämta budget från Budget-filer
         budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
 
         data['listning_actual'] = kpi_data['listning_actual']
