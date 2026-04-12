@@ -609,9 +609,17 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
             'rehab_budget': dict (endast för Rehab-enheter)
         }
     """
-    # FTE och Personalkostnad (samma för alla enheter)
+    # FTE
     fte_actual = load_fte_actual(enhet_kst, manad_str, base_path)
     fte_budget = load_fte_budget(enhet_kst, manad_str, base_path)
+
+    # Hämta ALL KPI-data från INFO.xlsx FÖRST (behövs för både listning och personalkostnad)
+    info_data = {}
+    if load_all_kpi_from_info:
+        try:
+            info_data = load_all_kpi_from_info(enhet_kst, manad_str, base_path)
+        except Exception as e:
+            print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
 
     # Personalkostnad: Försök P&L först, sedan INFO.xlsx som fallback
     personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
@@ -633,19 +641,10 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         'personalkostnad_budget': personalkostnad_budget,
     }
 
-    # Hämta KPI-data från INFO.xlsx (använd samma info_data som vi redan hämtade)
-    info_data = {}
-    if load_all_kpi_from_info:
-        try:
-            info_data = load_all_kpi_from_info(enhet_kst, manad_str, base_path)
-            # Använd INFO-data
-            data['listning_actual'] = int(info_data.get('listning_actual', 0))
-            data['acg_casemix_actual'] = info_data.get('acg_casemix_actual', 0)
-        except Exception as e:
-            print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
-            # Fallback
-            data['listning_actual'] = 0
-            data['acg_casemix_actual'] = 0
+    # Använd INFO-data för listning och ACG casemix
+    if info_data:
+        data['listning_actual'] = int(info_data.get('listning_actual', 0))
+        data['acg_casemix_actual'] = info_data.get('acg_casemix_actual', 0)
     else:
         data['listning_actual'] = 0
         data['acg_casemix_actual'] = 0
