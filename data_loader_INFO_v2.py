@@ -28,9 +28,9 @@ def load_all_kpi_from_info(enhet_kst, manad_str, base_path=None):
     """
     try:
         if base_path is None:
-            # Gå upp en nivå från Dashboard till VGR Alla enheter
+            # INFO.xlsx ligger i data/-mappen
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            base_path = os.path.dirname(script_dir)
+            base_path = os.path.join(script_dir, 'data')
 
         info_file = os.path.join(base_path, 'INFO.xlsx')
 
