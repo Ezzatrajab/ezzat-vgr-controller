@@ -1,8 +1,8 @@
 """
-Ezzat's Controlling System - Cloud Version v4.1
+Ezzat's Controlling System - Cloud Version v5.0
 Controller: Ezzat Rajab
-Uppdaterad: 2026-04-05
-Multi-enhet support: Alla 20 enheter (Åby-Kållered & Avenyn-Lorensberg kombinerade)
+Uppdaterad: 2026-04-12
+Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 RÄTT DATAKÄLLOR: KPIer Stor-GBG.xlsx + Budget-filer
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 """
@@ -237,7 +237,7 @@ def load_kpi_data():
 # ENHETSDATA - Alla 4 enheter
 # ========================================
 
-# Uppdaterad ENHETER_DATA med alla 20 enheter
+# Uppdaterad ENHETER_DATA med alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 # Månadsdatan hämtas dynamiskt från Excel-filer via get_current_data()
 
 ENHETER_DATA = {
@@ -384,6 +384,101 @@ ENHETER_DATA = {
         'region': 'Stor-Göteborg',
         'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
     },
+
+    # Tätort VC (6 enheter)
+    '003': {
+        'enhet_namn': 'Torpa',
+        'typ': 'VC',
+        'vec': 'Misala',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '005': {
+        'enhet_namn': 'Noltorp',
+        'typ': 'VC',
+        'vec': 'Ulrika Klugge',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '006': {
+        'enhet_namn': 'Lilla Edet',
+        'typ': 'VC',
+        'vec': 'Susanne Törnblom',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '008': {
+        'enhet_namn': 'Stavre',
+        'typ': 'VC',
+        'vec': 'Maria Nyqvist',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '014': {
+        'enhet_namn': 'Åmål',
+        'typ': 'VC',
+        'vec': 'Fredrik',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '305': {
+        'enhet_namn': 'Tanum',
+        'typ': 'VC',
+        'vec': 'Theres E',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+
+    # Tätort Rehab (8 enheter)
+    '703': {
+        'enhet_namn': 'Torpa Rehab',
+        'typ': 'Rehab',
+        'vec': 'Misala',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '705': {
+        'enhet_namn': 'Noltorp Rehab',
+        'typ': 'Rehab',
+        'vec': 'Ulrika Klugge',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '706': {
+        'enhet_namn': 'Lilla Edet Rehab',
+        'typ': 'Rehab',
+        'vec': 'Susanne Törnblom',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '708': {
+        'enhet_namn': 'Stavre Rehab',
+        'typ': 'Rehab',
+        'vec': 'Maria Nyqvist',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '714': {
+        'enhet_namn': 'Åmål Rehab',
+        'typ': 'Rehab',
+        'vec': 'Fredrik',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '650-670': {
+        'enhet_namn': 'Fjällbacka-Tanum Rehab',
+        'typ': 'Rehab',
+        'vec': 'Theres E',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
+    '713': {
+        'enhet_namn': 'Brålanda Rehab',
+        'typ': 'Rehab',
+        'vec': 'VEC namn saknas',
+        'region': 'Tätort',
+        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
+    },
 }
 
 # ========================================
@@ -398,6 +493,7 @@ def uppdatera_rehab_data():
 
         # Mapping mellan Rehab-enhet och dess VC-enhet för Rehab-poäng
         rehab_to_vc_mapping = {
+            # Stor-Göteborg
             '601': '102',     # Frölunda Torg Rehab -> Frölunda Torg VC
             '602': '103',     # Grimmered Rehab -> Grimmered VC
             '603': '104',     # Majorna Rehab -> Majorna VC
@@ -406,6 +502,14 @@ def uppdatera_rehab_data():
             '607': '111',     # Olskroken Rehab -> Olskroken VC
             '660': '302-303', # Avenyn Rehab -> Avenyn-Lorensberg VC
             '715': '015',     # Karlastaden Rehab -> Karlastaden VC
+            # Tätort
+            '703': '003',     # Torpa Rehab -> Torpa VC
+            '705': '005',     # Noltorp Rehab -> Noltorp VC
+            '706': '006',     # Lilla Edet Rehab -> Lilla Edet VC
+            '708': '008',     # Stavre Rehab -> Stavre VC
+            '714': '014',     # Åmål Rehab -> Åmål VC
+            '650-670': '305', # Fjällbacka-Tanum Rehab -> Tanum VC
+            '713': None,      # Brålanda Rehab (ingen VC-mapping)
         }
 
         # Uppdatera intäkter för ALLA Rehab-enheter från P&L

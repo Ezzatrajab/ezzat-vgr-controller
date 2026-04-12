@@ -457,7 +457,7 @@ def load_rehab_poang_budget(enhet_kst, manad_str, base_path=None):
     """
     try:
         # Endast för Rehab-enheter
-        if enhet_kst not in ['601', '602', '603', '604', '605', '607', '660', '715']:
+        if enhet_kst not in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
             return {'maaltal': 0, 'antal_anstallda': 0, 'budgeterad_intakt': 0}
 
         paths = get_file_paths(enhet_kst, base_path)
@@ -599,7 +599,7 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
     }
 
     # Kolla om det är en Rehab-enhet
-    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
         # Rehab-enhet: Lägg till Rehab-budget
         data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
         # Sätt 0 för VC-relaterade KPIer
