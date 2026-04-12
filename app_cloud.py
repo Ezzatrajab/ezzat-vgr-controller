@@ -1,9 +1,9 @@
 """
-Ezzat's Controlling System - Cloud Version v5.0
+Ezzat's Controlling System - Cloud Version v5.1
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-12
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
-RÄTT DATAKÄLLOR: KPIer Stor-GBG.xlsx + Budget-filer
+DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 """
 
