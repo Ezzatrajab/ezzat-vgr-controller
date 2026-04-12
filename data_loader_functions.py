@@ -62,7 +62,7 @@ def get_file_paths(enhet_kst, base_path=None):
 
     # Olika filnamn för olika enheter (baserat på tidigare mapping)
     file_map = {
-        # Rehab-enheter
+        # Stor-Göteborg Rehab-enheter
         '601': {'fte_actual': 'FTE Producerande per Yrkesgrupp (7).xlsx', 'hr_cost': 'HR Cost (12).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (26).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '602': {'fte_actual': 'FTE Producerande per Yrkesgrupp (8).xlsx', 'hr_cost': 'HR Cost (13).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (27).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '603': {'fte_actual': 'FTE Producerande per Yrkesgrupp (19).xlsx', 'hr_cost': 'HR Cost (25).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (28).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
@@ -72,7 +72,7 @@ def get_file_paths(enhet_kst, base_path=None):
         '660': {'fte_actual': 'FTE Producerande per Yrkesgrupp (23).xlsx', 'hr_cost': 'HR Cost (29).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (32).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '715': {'fte_actual': 'FTE Producerande per Yrkesgrupp (24).xlsx', 'hr_cost': 'HR Cost (30).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (33).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
 
-        # VC-enheter
+        # Stor-Göteborg VC-enheter
         '102': {'fte_actual': 'FTE Producerande per Yrkesgrupp (4).xlsx', 'hr_cost': 'HR Cost (10).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '103': {'fte_actual': 'FTE Producerande per Yrkesgrupp (5).xlsx', 'hr_cost': 'HR Cost (11).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '104': {'fte_actual': 'FTE Producerande per Yrkesgrupp (9).xlsx', 'hr_cost': 'HR Cost (14).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
@@ -85,6 +85,23 @@ def get_file_paths(enhet_kst, base_path=None):
         '304': {'fte_actual': 'FTE Producerande per Yrkesgrupp (16).xlsx', 'hr_cost': 'HR Cost (22).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '015': {'fte_actual': 'FTE Producerande per Yrkesgrupp (17).xlsx', 'hr_cost': 'HR Cost (23).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
         '4020': {'fte_actual': 'FTE Producerande per Yrkesgrupp (18).xlsx', 'hr_cost': 'HR Cost (24).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+
+        # Tätort VC-enheter
+        '003': {'fte_actual': 'FTE Producerande per Yrkesgrupp (25).xlsx', 'hr_cost': 'HR Cost (31).xlsx', 'intakt_budget': 'Intäkt Budget VC (48).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '005': {'fte_actual': 'FTE Producerande per Yrkesgrupp (26).xlsx', 'hr_cost': 'HR Cost (32).xlsx', 'intakt_budget': 'Intäkt Budget VC (49).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '006': {'fte_actual': 'FTE Producerande per Yrkesgrupp (27).xlsx', 'hr_cost': 'HR Cost (33).xlsx', 'intakt_budget': 'Intäkt Budget VC (50).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '008': {'fte_actual': 'FTE Producerande per Yrkesgrupp (28).xlsx', 'hr_cost': 'HR Cost (34).xlsx', 'intakt_budget': 'Intäkt Budget VC (51).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '014': {'fte_actual': 'FTE Producerande per Yrkesgrupp (30).xlsx', 'hr_cost': 'HR Cost (35).xlsx', 'intakt_budget': 'Intäkt Budget VC (52).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '305': {'fte_actual': 'FTE Producerande per Yrkesgrupp (31).xlsx', 'hr_cost': 'HR Cost (36).xlsx', 'intakt_budget': 'Intäkt Budget VC (53).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+
+        # Tätort Rehab-enheter
+        '703': {'fte_actual': 'FTE Producerande per Yrkesgrupp (48).xlsx', 'hr_cost': 'HR Cost (39).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (36).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '705': {'fte_actual': 'FTE Producerande per Yrkesgrupp (49).xlsx', 'hr_cost': 'HR Cost (40).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (37).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '706': {'fte_actual': 'FTE Producerande per Yrkesgrupp (50).xlsx', 'hr_cost': 'HR Cost (41).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (38).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '708': {'fte_actual': 'FTE Producerande per Yrkesgrupp (51).xlsx', 'hr_cost': 'HR Cost (42).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (39).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '714': {'fte_actual': 'FTE Producerande per Yrkesgrupp (53).xlsx', 'hr_cost': 'HR Cost (44).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (41).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '650-670': {'fte_actual': 'FTE Producerande per Yrkesgrupp (47).xlsx', 'hr_cost': 'HR Cost (37).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (35).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
+        '713': {'fte_actual': 'FTE Producerande per Yrkesgrupp (52).xlsx', 'hr_cost': 'HR Cost (43).xlsx', 'intakt_budget': 'Intäkt Budget Rehab (40).xlsx', 'pl_actual': 'P&L Actual.xlsx', 'pl_budget': 'P&L Budget.xlsx'},
     }
 
     if enhet_kst not in file_map:
