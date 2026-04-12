@@ -654,11 +654,8 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
     else:
         # VC-enhet: Hämta budget från Budget-filer
         budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
-
-        data['listning_actual'] = kpi_data['listning_actual']
-        data['listning_budget'] = budget_data['listning']
-        data['acg_casemix_actual'] = kpi_data['acg_casemix_actual']
-        data['acg_casemix_budget'] = budget_data['acg_casemix']
+        data['listning_budget'] = budget_data.get('listning', 0)
+        data['acg_casemix_budget'] = budget_data.get('acg_casemix', 0)
 
     return data
 
