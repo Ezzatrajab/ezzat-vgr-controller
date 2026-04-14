@@ -189,76 +189,70 @@ def load_kpi_data():
         kpi_path = os.path.join(script_dir, 'data', 'KPIer Stor-GBG.xlsx')
         df = pd.read_excel(kpi_path, sheet_name='Data', header=None)
 
-        # Hitta Rehab Poäng (rad 292)
-        rehab_poang_header_idx = 292
-        teambesok_header_idx = 304
+        # UPPDATERAT 2026-04-14: Ny struktur i KPIer-filen
+        # Hitta Rehab Poäng (rad 298 = header, rad 299-313 = data)
+        rehab_poang_header_idx = 298
+        teambesok_header_idx = 317
 
-        # Skapa mapping från kolumn till månad
+        # Skapa mapping från kolumn till månad (från Rehab Poäng header)
         header_row = df.iloc[rehab_poang_header_idx, :].tolist()
         col_to_month = {}
         for i, val in enumerate(header_row):
-            if pd.notna(val) and str(val).replace('.0', '').isdigit():
+            if pd.notna(val) and isinstance(val, (int, float)):
                 month_num = int(val)
-                if month_num >= 202601:  # Bara 2026 och framåt
+                if month_num >= 202504:  # Från April 2025 och framåt
                     year = month_num // 100
                     month = month_num % 100
                     col_to_month[i] = f'{year}-{month:02d}'
 
-        # Läs Rehab Poäng (rad 293-300: Frölunda Torg=102, Grimmered=103, etc)
-        # För kombinerade enheter: summera Åby (108) + Kållered (109) samt Avenyn (302) + Lorensberg (303)
-        rehab_poang = {}
-        rehab_temp = {}  # Temporär lagring för att kunna summera
+        # Läs Rehab Poäng (rad 299-313: ALLA 15 Rehab-enheter inkl. Tätort)
+        # Mappning mellan enhetsnamn och Rehab KST
+        REHAB_ENHETER_MAPPING = {
+            'Frölunda Torg': '601',
+            'Grimmered': '602',
+            'Olskroken': '607',
+            'Majorna': '603',
+            'Pedagogen Park': '604',
+            'Åby': '605',
+            'Avenyn': '660',
+            'Karlastaden': '715',
+            'Åmål': '714',
+            'Brålanda': '713',
+            'Stavre': '708',
+            'Lilla Edet': '706',
+            'Noltorp': '705',
+            'Torpa': '703',
+            'Fjällbacka - Tanum': '650-670',
+        }
 
-        for row_idx in range(293, 301):
+        rehab_poang = {}
+        for row_idx in range(299, 314):  # Rad 299-313
             row_data = df.iloc[row_idx, :].tolist()
-            enhet_namn = str(row_data[0]) if pd.notna(row_data[0]) else ""
-            enhet_kst = str(int(row_data[1])) if pd.notna(row_data[1]) else None
+            enhet_namn = str(row_data[0]).strip() if pd.notna(row_data[0]) else ""
+
+            # Använd mapping för att hitta KST
+            enhet_kst = REHAB_ENHETER_MAPPING.get(enhet_namn)
 
             if enhet_kst:
-                rehab_temp[enhet_kst] = {}
+                rehab_poang[enhet_kst] = {}
                 for col_idx, manad in col_to_month.items():
                     val = row_data[col_idx] if col_idx < len(row_data) else None
-                    rehab_temp[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+                    rehab_poang[enhet_kst][manad] = float(val) if pd.notna(val) else 0
 
-        # Kombinera data för Åby-Kållered (108+109)
-        if '108' in rehab_temp and '109' in rehab_temp:
-            rehab_poang['108-109'] = {}
-            for manad in col_to_month.values():
-                aby_val = rehab_temp['108'].get(manad, 0)
-                kallered_val = rehab_temp['109'].get(manad, 0)
-                rehab_poang['108-109'][manad] = aby_val + kallered_val
-        elif '108' in rehab_temp:
-            rehab_poang['108-109'] = rehab_temp['108']
-
-        # Kombinera data för Avenyn-Lorensberg (302+303)
-        if '302' in rehab_temp and '303' in rehab_temp:
-            rehab_poang['302-303'] = {}
-            for manad in col_to_month.values():
-                avenyn_val = rehab_temp['302'].get(manad, 0)
-                lorensberg_val = rehab_temp['303'].get(manad, 0)
-                rehab_poang['302-303'][manad] = avenyn_val + lorensberg_val
-        elif '302' in rehab_temp:
-            rehab_poang['302-303'] = rehab_temp['302']
-
-        # Lägg till övriga enheter (ej kombinerade)
-        for kst, data in rehab_temp.items():
-            if kst not in ['108', '109', '302', '303']:
-                rehab_poang[kst] = data
-
-        # Läs TeamBesök (rad 305-312: Frölunda Torg=601, Grimmered=602, etc)
-        # TeamBesök är för Rehab-enheter (605 = Åby Rehab, 660 = Avenyn Rehab, etc)
-        # Dessa kombineras INTE eftersom de redan är separata Rehab-enheter
+        # Läs TeamBesök (rad 318-332: ALLA 15 Rehab-enheter)
         teambesok = {}
-        for row_idx in range(305, 313):
+        for row_idx in range(318, 333):  # Rad 318-332
             row_data = df.iloc[row_idx, :].tolist()
-            enhet_namn = row_data[0]
-            enhet_kst = str(int(row_data[1])) if pd.notna(row_data[1]) else None
+            enhet_namn = str(row_data[0]).strip() if pd.notna(row_data[0]) else ""
+
+            # Använd samma mapping som för Rehab Poäng
+            enhet_kst = REHAB_ENHETER_MAPPING.get(enhet_namn)
 
             if enhet_kst:
                 teambesok[enhet_kst] = {}
                 for col_idx, manad in col_to_month.items():
                     val = row_data[col_idx] if col_idx < len(row_data) else None
-                    teambesok[enhet_kst][manad] = float(val) if pd.notna(val) else 0
+                    teambesok[enhet_kst][manad] = int(val) if pd.notna(val) else 0
 
         return {
             'rehab_poang': rehab_poang,
@@ -657,20 +651,22 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_budget_antal_anstallda'] = rehab_budget.get('antal_anstallda', 0)
         base_data['rehab_budget_intakt'] = rehab_budget.get('budgeterad_intakt', 0)
 
-        # Hämta Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
+        # Hämta Rehab-poäng från KPIer-filen (ALLA enheter inkl. Tätort)
+        kpi_data = load_kpi_data()
+        if enhet_kst in kpi_data.get('rehab_poang', {}):
+            base_data['rehab_poang_actual'] = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
+        else:
+            base_data['rehab_poang_actual'] = 0
+
+        # Budget och top performers från Poänguppföljning (bara Stor-Göteborg)
         try:
             rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
-            base_data['rehab_poang_actual'] = rehab_data['total_poang']
             base_data['rehab_poang_budget'] = rehab_data['budget_poang']
             base_data['top_performers'] = rehab_data['top_performers']
         except Exception as e:
-            st.sidebar.warning(f"⚠️ Kunde inte ladda Rehab-poäng: {e}")
-            base_data['rehab_poang_actual'] = 0
+            # För Tätort-enheter saknas budget/top performers - OK
             base_data['rehab_poang_budget'] = 0
             base_data['top_performers'] = []
-
-        # Hämta KPI-data (för TeamBesök)
-        kpi_data = load_kpi_data()
 
         # Hämta TeamBesök (om vald månad saknas, använd senaste tillgängliga)
         if enhet_kst in kpi_data.get('teambesok', {}):
@@ -689,9 +685,8 @@ def get_current_data(enhet_kst, manad):
             else:
                 base_data['teambesok'] = teambesok_val
         else:
-            # Tätort-enheter: Data finns ej i KPIer-filen än
+            # Enhet saknas i KPIer-filen
             base_data['teambesok'] = 0
-            base_data['teambesok_note'] = "⚠️ TeamBesök-data saknas för Tätort-enheter (lägg till i KPIer-filen)"
 
     # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
     else:
