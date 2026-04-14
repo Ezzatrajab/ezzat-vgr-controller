@@ -1,19 +1,19 @@
 """
-Ezzat's Controlling System - Cloud Version v5.6
+Ezzat's Controlling System - Cloud Version v5.7
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-14
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
-DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
-KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
+DATAKÄLLA: P&L Actual/Budget + KPIer + Poänguppföljning
 
-UPPDATERING v5.6 - TEAMBESÖK SMART FALLBACK:
-- FÖRBÄTTRAT: TeamBesök visar automatiskt senaste tillgängliga månad om vald månad saknar data
-- Visar tydlig notis när data kommer från annan månad
-- Exempel: Om mars 2026 saknas, visas februari 2026 automatiskt
+UPPDATERING v5.7 - TÄTORT REHAB-ENHETER FIX:
+- ✅ NYTT: Rehab Poäng för Tätort-enheter beräknas från P&L Actual (Intäkt 3053 / Grundbelopp)
+- ✅ NYTT: Budget Poäng läses från Intäkt Budget Rehab-filen
+- ⚠️ TeamBesök för Tätort saknas i KPIer-filen - visar notis tills data läggs till
 
-TIDIGARE FIXES:
+TIDIGARE UPPDATERINGAR v5.6:
+- TeamBesök smart fallback: Visar senaste tillgängliga månad om vald månad saknar data
 - Rehab-intäkter från rätt källa (Intäkt Budget Rehab + Poänguppföljning)
-- Alla 14 Rehab-enheter inkluderade
+- Alla 14 Rehab-enheter inkluderade (8 Stor-GBG + 6 Tätort)
 - Cache-tid 1 min + "Rensa Cache"-knapp
 """
 
@@ -689,7 +689,9 @@ def get_current_data(enhet_kst, manad):
             else:
                 base_data['teambesok'] = teambesok_val
         else:
+            # Tätort-enheter: Data finns ej i KPIer-filen än
             base_data['teambesok'] = 0
+            base_data['teambesok_note'] = "⚠️ TeamBesök-data saknas för Tätort-enheter (lägg till i KPIer-filen)"
 
     # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
     else:
@@ -810,15 +812,15 @@ def main():
                 st.error("❌ Fel lösenord! Försök igen.")
 
         st.markdown("---")
-        st.caption("Cloud Version - Alla 20 enheter (12 VC + 8 Rehab)")
+        st.caption("Cloud Version v5.6 - Alla 34 enheter (18 VC + 16 Rehab)")
         return
 
     # --- INLOGGAD ---
 
     # Header
     st.markdown('<p class="big-font">📊 Ezzat\'s Controlling System</p>', unsafe_allow_html=True)
-    st.markdown("**Controller:** Ezzat Rajab | **VGR Enheter:** 20 (12 VC + 8 Rehab)")
-    st.info("☁️ **CLOUD VERSION** - Alla 20 enheter aktiva (inkl. Åby-Kållered & Avenyn-Lorensberg)")
+    st.markdown("**Controller:** Ezzat Rajab | **VGR Enheter:** 34 (18 VC + 16 Rehab)")
+    st.info("☁️ **CLOUD VERSION** - Alla 34 enheter aktiva: 16 Stor-Göteborg + 14 Tätort + 4 Spec")
 
     # Sidebar
     st.sidebar.title("📋 Navigation")

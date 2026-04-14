@@ -1,11 +1,12 @@
 """
 Läser Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
+För Tätort-enheter: Beräknar poäng från P&L Actual-data
 """
 
 import pandas as pd
 import os
 
-# Mapping KST → Sheet-namn
+# Mapping KST → Sheet-namn (ENDAST STOR-GÖTEBORG)
 KST_TO_SHEET = {
     '601': 'Frölunda Torg',
     '602': 'Grimmered',
@@ -16,6 +17,9 @@ KST_TO_SHEET = {
     '660': 'Avenyn',
     '715': 'Karlastaden',
 }
+
+# Tätort Rehab-enheter (SAKNAS i Poänguppföljning - beräknas från P&L)
+TATORT_REHAB_KST = ['703', '705', '706', '708', '714', '650-670', '713']
 
 # Mapping KST → Enhetens namn i översiktsfliken
 KST_TO_ENHETSNAMN = {
@@ -44,6 +48,115 @@ MANAD_TO_COL = {
     '2026-11': 11,  # Nov
     '2026-12': 12,  # Dec
 }
+
+
+def load_rehab_poang_from_pl(enhet_kst, manad_str, base_path=None):
+    """
+    Beräknar Rehab-poäng från P&L Actual och Budget för Tätort-enheter
+
+    Args:
+        enhet_kst: '703', '705', '706', '708', '714', '650-670', '713'
+        manad_str: '2026-01', '2026-02', '2026-03', etc
+        base_path: Bas-sökväg
+
+    Returns:
+        dict: {
+            'total_poang': float (beräknat från intäkt 3053 / grundbelopp),
+            'budget_poang': float (från Intäkt Budget Rehab),
+            'top_performers': [] (tom för Tätort-enheter)
+        }
+    """
+    try:
+        # Hitta data-mappen
+        if base_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            base_path = os.path.join(script_dir, 'data')
+
+        # === Läs P&L Actual för att få intäkt 3053 ===
+        pl_actual_path = os.path.join(base_path, enhet_kst, 'P&L Actual.xlsx')
+        if not os.path.exists(pl_actual_path):
+            print(f"⚠️ P&L Actual saknas för {enhet_kst}")
+            return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+        df_pl = pd.read_excel(pl_actual_path, header=None)
+
+        # Hitta kolumn för vald månad
+        year, month = manad_str.split('-')
+        target_month = int(year + month)  # 202603 för 2026-03
+
+        # Rad 1 innehåller Year Month No
+        month_row = df_pl.iloc[1, :].tolist()
+        col_idx = None
+        for i, val in enumerate(month_row):
+            if pd.notna(val):
+                try:
+                    if int(float(val)) == target_month:
+                        col_idx = i
+                        break
+                except (ValueError, TypeError):
+                    continue
+
+        if col_idx is None:
+            print(f"⚠️ Månad {manad_str} hittades inte i P&L Actual för {enhet_kst}")
+            return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+        # Hitta rad 8: "3053 RG Prestationsersättning Rehab"
+        intakt_3053 = 0
+        for idx in range(len(df_pl)):
+            cell = df_pl.iloc[idx, 3] if df_pl.shape[1] > 3 else None
+            if pd.notna(cell) and '3053' in str(cell):
+                intakt_3053 = df_pl.iloc[idx, col_idx]
+                if pd.notna(intakt_3053):
+                    intakt_3053 = abs(float(intakt_3053)) * 1000  # P&L är i TKRSE K → konvertera till kr
+                break
+
+        # === Läs grundbelopp från Intäkt Budget Rehab ===
+        grundbelopp = 523  # Default
+        budget_files = [f for f in os.listdir(os.path.join(base_path, enhet_kst))
+                       if 'Intäkt Budget Rehab' in f and f.endswith('.xlsx')]
+
+        if budget_files:
+            df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, budget_files[0]), header=None)
+            if len(df_budget) > 2:
+                gb = df_budget.iloc[2, 1]  # Rad 2, kolumn 1
+                if pd.notna(gb):
+                    grundbelopp = float(gb)
+
+            # Beräkna budget poäng: Måltal × Antal anställda
+            if len(df_budget) > 4:
+                # Hitta kolumn för månaden
+                month_header = df_budget.iloc[0, :].tolist()
+                month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December']
+                month_name = month_names[int(month) - 1]
+
+                budget_col_idx = None
+                for i, val in enumerate(month_header):
+                    if pd.notna(val) and val == month_name:
+                        budget_col_idx = i
+                        break
+
+                budget_poang = 0
+                if budget_col_idx:
+                    maaltal = df_budget.iloc[3, budget_col_idx]  # Rad 3
+                    antal_anstallda = df_budget.iloc[4, budget_col_idx]  # Rad 4
+                    if pd.notna(maaltal) and pd.notna(antal_anstallda):
+                        budget_poang = float(maaltal) * float(antal_anstallda)
+        else:
+            budget_poang = 0
+
+        # Beräkna actual poäng = intäkt / grundbelopp
+        actual_poang = intakt_3053 / grundbelopp if grundbelopp > 0 else 0
+
+        return {
+            'total_poang': actual_poang,
+            'budget_poang': budget_poang,
+            'top_performers': []  # Ingen individdata för Tätort-enheter
+        }
+
+    except Exception as e:
+        print(f"Fel vid beräkning av Rehab-poäng från P&L för {enhet_kst}: {e}")
+        return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
 
 
 def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
@@ -106,6 +219,7 @@ def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
 def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
     """
     Läser Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
+    För Tätort-enheter: Beräknar poäng från P&L Actual
 
     Args:
         enhet_kst: '601', '602', etc
@@ -120,6 +234,11 @@ def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
         }
     """
     try:
+        # === TÄTORT REHAB-ENHETER: Beräkna från P&L ===
+        if enhet_kst in TATORT_REHAB_KST:
+            return load_rehab_poang_from_pl(enhet_kst, manad_str, base_path)
+
+        # === STOR-GÖTEBORG: Läs från Poänguppföljning ===
         # Läs budget först
         budget_poang = load_rehab_budget_poang(enhet_kst, manad_str, base_path)
         # Hitta filen
