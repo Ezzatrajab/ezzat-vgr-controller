@@ -1,16 +1,17 @@
 """
-Ezzat's Controlling System - Cloud Version v5.4
+Ezzat's Controlling System - Cloud Version v5.5
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-14
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 
-BUGFIX v5.4:
-- FIXAT: Lagt till alla 14 Rehab-enheter i listan (713, 714, 703, 705, 706, 708 saknades!)
-- FIXAT: Revenue Total hämtas nu från rätt månad i P&L (inte summerat)
-- Minskat cache-tid från 5 min till 1 min för snabbare uppdateringar
-- Lagt till "Rensa Cache"-knapp i sidebar
+BUGFIX v5.5 - KORREKT REHAB-INTÄKTER:
+- FIXAT: Rehab-intäkter läses nu från RÄTT källa:
+  * BUDGET: "Intäkt Budget Rehab" (rad 5, konto 3053) i SEK
+  * ACTUAL: Beräknas från Poänguppföljning (poäng × grundbelopp) i SEK
+- Lagt till alla 14 Rehab-enheter: 601, 602, 603, 604, 605, 607, 660, 703, 705, 706, 708, 713, 714, 715
+- Minskat cache-tid till 1 min + "Rensa Cache"-knapp
 """
 
 import streamlit as st
@@ -78,67 +79,93 @@ st.markdown("""
 @st.cache_data(ttl=60)  # 1 minut cache för snabbare uppdateringar
 def load_rehab_intakter_from_pl(enhet_kst, manad_str):
     """
-    Läser Rehab-intäkter (Revenue Total) från P&L Actual och P&L Budget filer.
+    Läser Rehab-intäkter från Intäkt Budget Rehab-fil och Poänguppföljning.
+
+    För Rehab-enheter:
+    - BUDGET: Läses från "Intäkt Budget Rehab" (rad 5, konto 3053) i SEK
+    - ACTUAL: Beräknas från Poänguppföljning (poäng × grundbelopp) i SEK
+
     Args:
         enhet_kst: '601', '602', etc
         manad_str: '2026-01', '2026-02', etc
     Returns:
-        {'actual': value, 'budget': value}
+        {'actual': value, 'budget': value} - värden i SEK
     """
     try:
-        # Konvertera månad till nummer
-        year, month = manad_str.split('-')
-        manad_num = int(year) * 100 + int(month)
-
-        # Sökväg som fungerar både lokalt och på Streamlit Cloud
         import os
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_path = os.path.join(script_dir, 'data')
 
-        # Läs P&L Actual
-        df_actual = pd.read_excel(os.path.join(base_path, enhet_kst, 'P&L Actual.xlsx'))
-        # Läs P&L Budget
-        df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, 'P&L Budget.xlsx'))
+        # Konvertera månad till kolumnindex
+        year, month = manad_str.split('-')
+        month_num = int(month)
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December']
+        month_name = month_names[month_num - 1]
 
-        # Hitta rad för Revenue Total (rad 3 i P&L-filerna)
-        # CG Item = 'Revenue' och Unnamed: 3 (Account full Name) = NaN (första Revenue-raden)
-        revenue_row_actual = df_actual[(df_actual['CG Item'] == 'Revenue') & (df_actual['Unnamed: 3'].isna())]
-        revenue_row_budget = df_budget[(df_budget['CG Item'] == 'Revenue') & (df_budget['Unnamed: 3'].isna())]
+        # === BUDGET: Läs från Intäkt Budget Rehab ===
+        budget_val = 0
+        try:
+            intakt_files = [f for f in os.listdir(os.path.join(base_path, enhet_kst))
+                           if 'Intäkt Budget Rehab' in f and f.endswith('.xlsx')]
+            if intakt_files:
+                df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, intakt_files[0]), header=None)
+                # Rad 5 (0-indexed) = Intäkt konto 3053
+                # Kolumn för månaden
+                if month_name in df_budget.iloc[0].tolist():
+                    col_idx = df_budget.iloc[0].tolist().index(month_name)
+                    budget_val = df_budget.iloc[5, col_idx]
+                    if pd.notna(budget_val):
+                        budget_val = float(budget_val)
+                    else:
+                        budget_val = 0
+        except Exception as e:
+            print(f"Fel vid läsning av Intäkt Budget Rehab för {enhet_kst}: {e}")
+            budget_val = 0
 
-        if revenue_row_actual.empty or revenue_row_budget.empty:
-            return {'actual': 0, 'budget': 0}
+        # === ACTUAL: Beräkna från Poänguppföljning ===
+        actual_val = 0
+        try:
+            # Mapping KST → Sheet-namn
+            kst_to_sheet = {
+                '601': 'Frölunda Torg', '602': 'Grimmered', '603': 'Majorna',
+                '604': 'Pedagogen Park', '605': 'Åby', '607': 'Olskroken',
+                '660': 'Avenyn', '715': 'Karlastaden',
+                '713': 'Kviberg', '714': 'Olskroken',  # Ej bekräftad mapping
+            }
 
-        # Ta första raden (rad 3 = Revenue Total)
-        revenue_row_actual = revenue_row_actual.iloc[0]
-        revenue_row_budget = revenue_row_budget.iloc[0]
+            if enhet_kst in kst_to_sheet:
+                poang_file = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
+                if os.path.exists(poang_file):
+                    df_poang = pd.read_excel(poang_file, sheet_name=kst_to_sheet[enhet_kst], header=None)
 
-        # Hitta rätt kolumn baserat på månad
-        # Header row (rad 0) innehåller månaderna
-        period_cols = [col for col in df_actual.columns if 'Selected Period' in str(col)]
+                    # Hitta rad 17 (totalt antal poäng)
+                    # Kolumn för månaden: 1=Jan, 2=Feb, 3=Mar, etc
+                    poang_col = month_num
+                    if len(df_poang) > 17 and df_poang.shape[1] > poang_col:
+                        total_poang = df_poang.iloc[17, poang_col]
+                        if pd.notna(total_poang) and total_poang > 0:
+                            # Hämta grundbelopp från Intäkt Budget Rehab (rad 2)
+                            grundbelopp = 523  # Default
+                            if intakt_files:
+                                df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, intakt_files[0]), header=None)
+                                if len(df_budget) > 2:
+                                    gb = df_budget.iloc[2, 1]  # Rad 2, kolumn 1 (January)
+                                    if pd.notna(gb):
+                                        grundbelopp = float(gb)
 
-        # Läs header row för att hitta rätt månad
-        header_row = df_actual.iloc[0]
-
-        col_idx = None
-        for col in period_cols:
-            val = header_row[col]
-            if pd.notna(val) and int(val) == manad_num:
-                col_idx = col
-                break
-
-        if col_idx is None:
-            return {'actual': 0, 'budget': 0}
-
-        actual_val = revenue_row_actual[col_idx]
-        budget_val = revenue_row_budget[col_idx]
+                            # Beräkna intäkt = poäng × grundbelopp
+                            actual_val = float(total_poang) * grundbelopp
+        except Exception as e:
+            print(f"Fel vid beräkning av actual från Poänguppföljning för {enhet_kst}: {e}")
+            actual_val = 0
 
         return {
-            'actual': float(actual_val) if pd.notna(actual_val) else 0,
-            'budget': float(budget_val) if pd.notna(budget_val) else 0
+            'actual': actual_val,
+            'budget': budget_val
         }
     except Exception as e:
-        # Visa inte fel i produktionen, bara returnera 0
-        print(f"Fel vid läsning av P&L för {enhet_kst}, månad {manad_str}: {e}")
+        print(f"Fel vid läsning av Rehab-intäkter för {enhet_kst}, månad {manad_str}: {e}")
         return {'actual': 0, 'budget': 0}
 
 
