@@ -1,15 +1,16 @@
 """
-Ezzat's Controlling System - Cloud Version v5.3
+Ezzat's Controlling System - Cloud Version v5.4
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-14
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 
-BUGFIX v5.3:
+BUGFIX v5.4:
+- FIXAT: Lagt till alla 14 Rehab-enheter i listan (713, 714, 703, 705, 706, 708 saknades!)
+- FIXAT: Revenue Total hämtas nu från rätt månad i P&L (inte summerat)
 - Minskat cache-tid från 5 min till 1 min för snabbare uppdateringar
 - Lagt till "Rensa Cache"-knapp i sidebar
-- Fixat problem med saknad data för Rehab-enheter
 """
 
 import streamlit as st
@@ -613,8 +614,8 @@ def get_current_data(enhet_kst, manad):
     if 'intakter_3053' not in base_data:
         base_data['intakter_3053'] = {'actual': 0, 'budget': 0}
 
-    # För Rehab-enheter: Läs intäkter från P&L
-    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715']:
+    # För Rehab-enheter: Läs intäkter från P&L (alla 14 Rehab-enheter)
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '703', '705', '706', '708', '713', '714', '715']:
         # Hämta intäkter från P&L
         intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
         base_data['intakter_totalt'] = intakter
