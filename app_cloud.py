@@ -1,17 +1,20 @@
 """
-Ezzat's Controlling System - Cloud Version v5.5
+Ezzat's Controlling System - Cloud Version v5.6
 Controller: Ezzat Rajab
 Uppdaterad: 2026-04-14
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 
-BUGFIX v5.5 - KORREKT REHAB-INTÄKTER:
-- FIXAT: Rehab-intäkter läses nu från RÄTT källa:
-  * BUDGET: "Intäkt Budget Rehab" (rad 5, konto 3053) i SEK
-  * ACTUAL: Beräknas från Poänguppföljning (poäng × grundbelopp) i SEK
-- Lagt till alla 14 Rehab-enheter: 601, 602, 603, 604, 605, 607, 660, 703, 705, 706, 708, 713, 714, 715
-- Minskat cache-tid till 1 min + "Rensa Cache"-knapp
+UPPDATERING v5.6 - TEAMBESÖK SMART FALLBACK:
+- FÖRBÄTTRAT: TeamBesök visar automatiskt senaste tillgängliga månad om vald månad saknar data
+- Visar tydlig notis när data kommer från annan månad
+- Exempel: Om mars 2026 saknas, visas februari 2026 automatiskt
+
+TIDIGARE FIXES:
+- Rehab-intäkter från rätt källa (Intäkt Budget Rehab + Poänguppföljning)
+- Alla 14 Rehab-enheter inkluderade
+- Cache-tid 1 min + "Rensa Cache"-knapp
 """
 
 import streamlit as st
@@ -669,9 +672,22 @@ def get_current_data(enhet_kst, manad):
         # Hämta KPI-data (för TeamBesök)
         kpi_data = load_kpi_data()
 
-        # Hämta TeamBesök
+        # Hämta TeamBesök (om vald månad saknas, använd senaste tillgängliga)
         if enhet_kst in kpi_data.get('teambesok', {}):
-            base_data['teambesok'] = kpi_data['teambesok'][enhet_kst].get(manad, 0)
+            teambesok_val = kpi_data['teambesok'][enhet_kst].get(manad, 0)
+
+            # Om vald månad saknar data, hitta senaste tillgängliga månad
+            if teambesok_val == 0:
+                available_months = {m: v for m, v in kpi_data['teambesok'][enhet_kst].items() if v > 0}
+                if available_months:
+                    latest_month = max(available_months.keys())
+                    teambesok_val = available_months[latest_month]
+                    base_data['teambesok'] = teambesok_val
+                    base_data['teambesok_note'] = f"Data från {latest_month} (senaste tillgängliga)"
+                else:
+                    base_data['teambesok'] = 0
+            else:
+                base_data['teambesok'] = teambesok_val
         else:
             base_data['teambesok'] = 0
 
@@ -966,10 +982,14 @@ def main():
             with col3:
                 st.markdown("#### 🏥 TeamBesök (KPI)")
                 actual = current_data.get('teambesok', 0)
+                note = current_data.get('teambesok_note', '')
 
                 if actual > 0:
                     st.metric("TeamBesök", f"{int(actual)}")
-                    st.markdown("📊 Data från KPI-filen")
+                    if note:
+                        st.warning(f"ℹ️ {note}")
+                    else:
+                        st.markdown("📊 Data från KPI-filen")
                 else:
                     st.info("Ingen data tillgänglig")
 
