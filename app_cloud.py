@@ -1,12 +1,15 @@
 """
-Ezzat's Controlling System - Cloud Version v5.2
+Ezzat's Controlling System - Cloud Version v5.3
 Controller: Ezzat Rajab
-Uppdaterad: 2026-04-12
+Uppdaterad: 2026-04-14
 Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
 DATAKÄLLA: INFO.xlsx för ALL KPI-data (super-enkelt!)
 KPI:er: Listning, ACG Casemix, Personalkostnad, FTE
 
-BUGFIX v5.2: Personalkostnad budget för Tätort-enheter nu korrekt
+BUGFIX v5.3:
+- Minskat cache-tid från 5 min till 1 min för snabbare uppdateringar
+- Lagt till "Rensa Cache"-knapp i sidebar
+- Fixat problem med saknad data för Rehab-enheter
 """
 
 import streamlit as st
@@ -71,7 +74,7 @@ st.markdown("""
 # DATAINLÄSNING FRÅN EXCEL-FILER
 # ========================================
 
-@st.cache_data(ttl=300)  # 5 minuter cache istället för 1 timme
+@st.cache_data(ttl=60)  # 1 minut cache för snabbare uppdateringar
 def load_rehab_intakter_from_pl(enhet_kst, manad_str):
     """
     Läser Rehab-intäkter (Revenue Total) från P&L Actual och P&L Budget filer.
@@ -138,7 +141,7 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         return {'actual': 0, 'budget': 0}
 
 
-@st.cache_data(ttl=300, show_spinner=False)  # 5 minuter cache - v4.1
+@st.cache_data(ttl=60, show_spinner=False)  # 1 minut cache - v5.3
 def load_kpi_data():
     """
     Läser KPI-data från KPIer Stor-GBG.xlsx
@@ -822,6 +825,12 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 📅 Senaste uppdatering")
     st.sidebar.success(f"{vald_manad_namn}\n\n✅ Data uppdaterad")
+
+    # Cache-kontroll
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Rensa Cache", help="Klicka här om data inte uppdateras"):
+        st.cache_data.clear()
+        st.sidebar.success("Cache rensad! Laddar om...")
 
     if st.sidebar.button("🚪 Logga ut"):
         st.session_state.authenticated = False
