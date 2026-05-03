@@ -67,12 +67,17 @@ def get_enhet_folder_name(kst: str, base_path=None) -> str:
 
     Args:
         kst: '102', '601', etc.
-        base_path: Bas-sökväg (optional)
+        base_path: Bas-sökväg (optional, ska peka på VGR Alla enheter)
 
     Returns:
         str: Mappnamn t.ex. 'Frölunda Torg', 'Frölunda Torg Rehab'
     """
-    mappings = load_org_mappings(base_path)
+    # För enhetsmappar, använd alltid VGR Alla enheter-mappen (en nivå upp från Dashboard)
+    if base_path is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.dirname(script_dir)  # VGR Alla enheter
+
+    mappings = load_org_mappings(None)  # INFO.xlsx finns i Dashboard
     full_name = mappings['kst_to_full_name'].get(kst, '')
 
     # Skapa mappnamn baserat på fullständigt namn
