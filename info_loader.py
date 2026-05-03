@@ -27,7 +27,7 @@ def load_org_mappings(base_path=None) -> Dict[str, Dict[str, str]]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)  # En nivå upp från Dashboard
+        base_path = script_dir  # INFO.xlsx in same folder  # En nivå upp från Dashboard
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -106,7 +106,7 @@ def load_acg_casemix_from_info(enhet_namn: str, manad_str: str, base_path=None) 
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)
+        base_path = script_dir  # INFO.xlsx in same folder
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -198,7 +198,7 @@ def load_kpi_from_info(kpi_name: str, enhet_namn: str, manad_str: str, base_path
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)
+        base_path = script_dir  # INFO.xlsx in same folder
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -381,7 +381,7 @@ def build_enheter_data(base_path=None) -> Dict[str, Dict]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)
+        base_path = script_dir  # INFO.xlsx in same folder
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 

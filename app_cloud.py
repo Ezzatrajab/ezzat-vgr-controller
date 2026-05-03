@@ -558,7 +558,7 @@ def show_start_page():
 
     # Ladda bakgrundsbild och logo
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_path = os.path.dirname(script_dir)
+    base_path = script_dir  # Changed: Images now in same folder as app
 
     bakgrund_path = os.path.join(base_path, "Bakgrund - app.png")
     logo_path = os.path.join(base_path, "MTG Logo.png")
