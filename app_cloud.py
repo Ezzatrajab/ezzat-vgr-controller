@@ -25,8 +25,9 @@ from datetime import datetime
 try:
     from data_loader_functions import load_all_data_for_enhet
     from rehab_poang_loader import load_rehab_poang_och_top_performers
+    from info_loader import build_enheter_data
 except ImportError as e:
-    st.error(f"Kunde inte importera data_loader_functions eller rehab_poang_loader: {e}")
+    st.error(f"Kunde inte importera data_loader_functions, rehab_poang_loader eller info_loader: {e}")
     st.stop()
 
 # Konfiguration
@@ -263,252 +264,15 @@ def load_kpi_data():
 
 
 # ========================================
-# ENHETSDATA - Alla 4 enheter
+# ENHETSDATA - Dynamiskt från INFO.xlsx
 # ========================================
 
-# Uppdaterad ENHETER_DATA med alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
+# UPPDATERAD 2026-05-03: ENHETER_DATA byggs nu dynamiskt från INFO.xlsx Org-flik
+# Detta inkluderar ALLA enheter (VC + Rehab) från både Stor-Göteborg och Tätort
 # Månadsdatan hämtas dynamiskt från Excel-filer via get_current_data()
 
-ENHETER_DATA = {
-    # Stor-Göteborg VC (12 enheter)
-    '102': {
-        'enhet_namn': 'Frölunda Torg',
-        'typ': 'VC',
-        'vec': 'Anna Victorin',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '103': {
-        'enhet_namn': 'Grimmered',
-        'typ': 'VC',
-        'vec': 'Ulrika Klugge',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '104': {
-        'enhet_namn': 'Majorna',
-        'typ': 'VC',
-        'vec': 'Susanne Törnblom',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '106': {
-        'enhet_namn': 'Landala',
-        'typ': 'VC',
-        'vec': 'Maria Nyqvist',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '107': {
-        'enhet_namn': 'Pedagogen Park',
-        'typ': 'VC',
-        'vec': 'Fredrik',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '108-109': {
-        'enhet_namn': 'Åby-Kållered',
-        'typ': 'VC',
-        'vec': 'Theres E',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '110': {
-        'enhet_namn': 'Kviberg',
-        'typ': 'VC',
-        'vec': 'VEC namn saknas',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '111': {
-        'enhet_namn': 'Olskroken',
-        'typ': 'VC',
-        'vec': 'VEC namn saknas',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '302-303': {
-        'enhet_namn': 'Avenyn-Lorensberg',
-        'typ': 'VC',
-        'vec': 'Mats Norin',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '304': {
-        'enhet_namn': 'Husaren',
-        'typ': 'VC',
-        'vec': 'Maria Sahl',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '015': {
-        'enhet_namn': 'Karlastaden',
-        'typ': 'VC',
-        'vec': 'Theresia Nilhag',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '4020': {
-        'enhet_namn': 'City VC',
-        'typ': 'VC',
-        'vec': 'Amanda Lidström',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-
-    # Rehab (8 enheter)
-    '601': {
-        'enhet_namn': 'Frölunda Torg Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '602': {
-        'enhet_namn': 'Grimmered Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '603': {
-        'enhet_namn': 'Majorna Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '604': {
-        'enhet_namn': 'Pedagogen Park Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '605': {
-        'enhet_namn': 'Åby Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '607': {
-        'enhet_namn': 'Olskroken Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '660': {
-        'enhet_namn': 'Avenyn Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '715': {
-        'enhet_namn': 'Karlastaden Rehab',
-        'typ': 'Rehab',
-        'vec': 'Elin Magnusson',
-        'region': 'Stor-Göteborg',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-
-    # Tätort VC (6 enheter)
-    '003': {
-        'enhet_namn': 'Torpa',
-        'typ': 'VC',
-        'vec': 'Misala',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '005': {
-        'enhet_namn': 'Noltorp',
-        'typ': 'VC',
-        'vec': 'Ulrika Klugge',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '006': {
-        'enhet_namn': 'Lilla Edet',
-        'typ': 'VC',
-        'vec': 'Susanne Törnblom',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '008': {
-        'enhet_namn': 'Stavre',
-        'typ': 'VC',
-        'vec': 'Maria Nyqvist',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '014': {
-        'enhet_namn': 'Åmål',
-        'typ': 'VC',
-        'vec': 'Fredrik',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '305': {
-        'enhet_namn': 'Tanum',
-        'typ': 'VC',
-        'vec': 'Theres E',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-
-    # Tätort Rehab (8 enheter)
-    '703': {
-        'enhet_namn': 'Torpa Rehab',
-        'typ': 'Rehab',
-        'vec': 'Misala',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '705': {
-        'enhet_namn': 'Noltorp Rehab',
-        'typ': 'Rehab',
-        'vec': 'Ulrika Klugge',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '706': {
-        'enhet_namn': 'Lilla Edet Rehab',
-        'typ': 'Rehab',
-        'vec': 'Susanne Törnblom',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '708': {
-        'enhet_namn': 'Stavre Rehab',
-        'typ': 'Rehab',
-        'vec': 'Maria Nyqvist',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '714': {
-        'enhet_namn': 'Åmål Rehab',
-        'typ': 'Rehab',
-        'vec': 'Fredrik',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '650-670': {
-        'enhet_namn': 'Fjällbacka-Tanum Rehab',
-        'typ': 'Rehab',
-        'vec': 'Theres E',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-    '713': {
-        'enhet_namn': 'Brålanda Rehab',
-        'typ': 'Rehab',
-        'vec': 'VEC namn saknas',
-        'region': 'Tätort',
-        'månader': {'2026-01': {}, '2026-02': {}, '2026-03': {}}
-    },
-}
+# Bygg ENHETER_DATA dynamiskt från INFO.xlsx Org-flik
+ENHETER_DATA = build_enheter_data()
 
 # ========================================
 # UPPDATERA REHAB-DATA FRÅN FILER
@@ -787,13 +551,163 @@ def analyze_personal_avvikelser(enhet_kst, vald_manad):
     analyser.sort(key=lambda x: abs(x['kostnad_avv_pct']), reverse=True)
     return analyser
 
+def show_start_page():
+    """Visa startsida med bakgrund, logo och enhetsgrupperingar"""
+    import os
+    import base64
+
+    # Ladda bakgrundsbild och logo
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    base_path = os.path.dirname(script_dir)
+
+    bakgrund_path = os.path.join(base_path, "Bakgrund - app.png")
+    logo_path = os.path.join(base_path, "MTG Logo.png")
+
+    # CSS för bakgrund och styling
+    page_bg_css = ""
+    if os.path.exists(bakgrund_path):
+        with open(bakgrund_path, "rb") as f:
+            bg_data = base64.b64encode(f.read()).decode()
+        page_bg_css = f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{bg_data}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        .content-box {{
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+        .enhet-card {{
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border-left: 4px solid #1f77b4;
+            transition: all 0.3s;
+        }}
+        .enhet-card:hover {{
+            background-color: rgba(240, 248, 255, 0.95);
+            transform: translateX(5px);
+        }}
+        .group-header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }}
+        </style>
+        """
+
+    st.markdown(page_bg_css, unsafe_allow_html=True)
+
+    # Logo och titel
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if os.path.exists(logo_path):
+            st.image(logo_path, use_container_width=True)
+        st.markdown("""
+        <div style='text-align: center; margin: 20px 0;'>
+            <h1 style='color: #1f77b4; font-size: 2.5em; margin: 0;'>VGR Controlling</h1>
+            <p style='font-size: 1.2em; color: #666; margin: 10px 0;'>Ezzat Rajab - Business Controller</p>
+            <p style='font-size: 1em; color: #888;'>Medtanken Group | 37 Enheter</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div class='content-box'>", unsafe_allow_html=True)
+
+    # Gruppera enheter
+    enheter_grupper = {
+        'Stor-Göteborg VC': [],
+        'Stor-Göteborg Rehab': [],
+        'Tätort VC': [],
+        'Tätort Rehab': []
+    }
+
+    for kst, data in ENHETER_DATA.items():
+        region = data['region']
+        typ = data['typ']
+        key = f"{region} {typ}"
+        enheter_grupper[key].append((kst, data['enhet_namn'], data['vec']))
+
+    # Visa i 2 kolumner
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        # Stor-Göteborg VC
+        st.markdown("<div class='group-header'>🏥 Stor-Göteborg - Vårdcentraler</div>", unsafe_allow_html=True)
+        st.markdown(f"**{len(enheter_grupper['Stor-Göteborg VC'])} enheter**")
+        for kst, namn, vec in sorted(enheter_grupper['Stor-Göteborg VC'], key=lambda x: x[1]):
+            st.markdown(f"""
+            <div class='enhet-card'>
+                <strong>{kst}</strong> - {namn}<br>
+                <small style='color: #666;'>VEC: {vec}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Tätort VC
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);'>🏥 Tätort - Vårdcentraler</div>", unsafe_allow_html=True)
+        st.markdown(f"**{len(enheter_grupper['Tätort VC'])} enheter**")
+        for kst, namn, vec in sorted(enheter_grupper['Tätort VC'], key=lambda x: x[1]):
+            st.markdown(f"""
+            <div class='enhet-card' style='border-left-color: #f5576c;'>
+                <strong>{kst}</strong> - {namn}<br>
+                <small style='color: #666;'>VEC: {vec}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with col_right:
+        # Stor-Göteborg Rehab
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);'>🏃 Stor-Göteborg - Rehab</div>", unsafe_allow_html=True)
+        st.markdown(f"**{len(enheter_grupper['Stor-Göteborg Rehab'])} enheter**")
+        for kst, namn, vec in sorted(enheter_grupper['Stor-Göteborg Rehab'], key=lambda x: x[1]):
+            st.markdown(f"""
+            <div class='enhet-card' style='border-left-color: #00f2fe;'>
+                <strong>{kst}</strong> - {namn}<br>
+                <small style='color: #666;'>VEC: {vec}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Tätort Rehab
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);'>🏃 Tätort - Rehab</div>", unsafe_allow_html=True)
+        st.markdown(f"**{len(enheter_grupper['Tätort Rehab'])} enheter**")
+        for kst, namn, vec in sorted(enheter_grupper['Tätort Rehab'], key=lambda x: x[1]):
+            st.markdown(f"""
+            <div class='enhet-card' style='border-left-color: #fee140;'>
+                <strong>{kst}</strong> - {namn}<br>
+                <small style='color: #666;'>VEC: {vec}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #666; padding: 20px;'>
+        <p>💡 <strong>Använd sidofältet</strong> för att välja enhet och börja analysera</p>
+        <p style='font-size: 0.9em;'>Uppdaterad: 2026-05-03 | Powered by Claude Code 🤖</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def main():
     # Lösenordsskydd
     if 'authenticated' not in st.session_state:
         st.session_state.authenticated = False
 
     if not st.session_state.authenticated:
-        st.title("🔐 Ezzat's Controlling System")
+        st.title("🔐 VGR Controlling System")
         st.markdown("### Välkommen! Ange lösenord för att fortsätta")
 
         password = st.text_input("Lösenord", type="password")
@@ -806,15 +720,10 @@ def main():
                 st.error("❌ Fel lösenord! Försök igen.")
 
         st.markdown("---")
-        st.caption("Cloud Version v5.6 - Alla 34 enheter (18 VC + 16 Rehab)")
+        st.caption("VGR Controlling System v6.0 - 37 enheter (Stor-Göteborg + Tätort)")
         return
 
     # --- INLOGGAD ---
-
-    # Header
-    st.markdown('<p class="big-font">📊 Ezzat\'s Controlling System</p>', unsafe_allow_html=True)
-    st.markdown("**Controller:** Ezzat Rajab | **VGR Enheter:** 34 (18 VC + 16 Rehab)")
-    st.info("☁️ **CLOUD VERSION** - Alla 34 enheter aktiva: 16 Stor-Göteborg + 14 Tätort + 4 Spec")
 
     # Sidebar
     st.sidebar.title("📋 Navigation")
@@ -859,7 +768,7 @@ def main():
 
     page = st.sidebar.radio(
         "Välj vy",
-        ["🏠 Översikt", "📊 Enhetsvy", "💬 VEC Kommentarer"]
+        ["🏠 Start", "📊 Översikt", "📈 Enhetsvy", "💬 VEC Kommentarer"]
     )
 
     st.sidebar.markdown("---")
@@ -876,6 +785,11 @@ def main():
         st.session_state.authenticated = False
         st.rerun()
 
+    # === START ===
+    if page == "🏠 Start":
+        show_start_page()
+        return
+
     # Hämta enhetens data
     enhet_info = ENHETER_DATA[vald_enhet_kst]
     # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
@@ -885,7 +799,7 @@ def main():
     is_rehab = enhet_info['typ'] == 'Rehab'
 
     # === ÖVERSIKT ===
-    if page == "🏠 Översikt":
+    if page == "📊 Översikt":
         st.header(f"🏠 Översikt - {vald_manad_namn}")
         st.subheader(f"**{enhet_info['enhet_namn']}** ({enhet_info['typ']}) - KST: {vald_enhet_kst}")
 
@@ -1071,7 +985,7 @@ def main():
             st.markdown('<div class="green-box">🟢 Alla personalkategorier inom acceptabelt intervall</div>', unsafe_allow_html=True)
 
     # === ENHETSVY ===
-    elif page == "📊 Enhetsvy":
+    elif page == "📈 Enhetsvy":
         st.header(f"📊 {enhet_info['enhet_namn']} (KST: {vald_enhet_kst})")
         st.markdown(f"**VEC:** {enhet_info['vec']} | **Region:** {enhet_info['region']} | **Typ:** {enhet_info['typ']} | **Period:** {vald_manad_namn}")
 

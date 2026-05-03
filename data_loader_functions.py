@@ -12,10 +12,12 @@ import openpyxl
 
 # Import INFO loader
 try:
-    from data_loader_INFO_v2 import load_all_kpi_from_info
-except ImportError:
-    print("Varning: Kunde inte importera load_all_kpi_from_info")
-    load_all_kpi_from_info = None
+    from info_loader import load_org_mappings, get_enhet_folder_name, load_all_kpi_for_enhet
+except ImportError as e:
+    print(f"Varning: Kunde inte importera info_loader: {e}")
+    load_org_mappings = None
+    get_enhet_folder_name = None
+    load_all_kpi_for_enhet = None
 
 
 # ========================================
@@ -61,12 +63,18 @@ KST_TO_SHORTNAME = {
 # ========================================
 
 def get_file_paths(enhet_kst, base_path=None):
-    """Returnerar sökvägar till alla datafiler för en enhet"""
+    """
+    Returnerar sökvägar till alla datafiler för en enhet.
+
+    UPPDATERAD 2026-05-03: Använder enhetsnamn-mappar istället för KST-mappar
+    """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.join(script_dir, 'data')
+        base_path = os.path.dirname(script_dir)  # En nivå upp till "VGR Alla enheter"
 
-    enhet_path = os.path.join(base_path, enhet_kst)
+    # Hämta mappnamn från INFO.xlsx
+    folder_name = get_enhet_folder_name(enhet_kst, base_path)
+    enhet_path = os.path.join(base_path, folder_name)
 
     # Olika filnamn för olika enheter (baserat på tidigare mapping)
     file_map = {
@@ -128,7 +136,9 @@ def get_file_paths(enhet_kst, base_path=None):
 
 def load_kpi_data_from_file(enhet_kst, manad_str, base_path=None):
     """
-    Hämtar Listning Actual och ACG Casemix Actual från KPIer Stor-GBG.xlsx
+    Hämtar Listning Actual och ACG Casemix från INFO.xlsx.
+
+    UPPDATERAD 2026-05-03: Använder INFO.xlsx istället för KPIer Stor-GBG.xlsx
 
     OBS: Slår ihop data för kombinerade enheter:
     - 108-109 (Åby-Kållered): Åby + Kållered
@@ -137,7 +147,7 @@ def load_kpi_data_from_file(enhet_kst, manad_str, base_path=None):
     Args:
         enhet_kst: '102', '103', '015', etc
         manad_str: '2026-01', '2026-02', etc
-        base_path: Bas-sökväg till data-mappen
+        base_path: Bas-sökväg (optional)
 
     Returns:
         dict: {
@@ -146,9 +156,27 @@ def load_kpi_data_from_file(enhet_kst, manad_str, base_path=None):
         }
     """
     try:
+        # Hämta KPI-data från INFO.xlsx (både KPI-flik och INFO-flik)
+        kpi_data = load_all_kpi_for_enhet(enhet_kst, manad_str, base_path)
+
+        return {
+            'listning_actual': int(kpi_data['listning']) if kpi_data['listning'] else 0,
+            'acg_casemix_actual': float(kpi_data['acg_casemix']) if kpi_data['acg_casemix'] else 0
+        }
+    except Exception as e:
+        print(f"Fel vid läsning av KPI-data för {enhet_kst}: {e}")
+        return {'listning_actual': 0, 'acg_casemix_actual': 0}
+
+
+def load_kpi_data_from_file_OLD(enhet_kst, manad_str, base_path=None):
+    """
+    DEPRECATED: Gammal funktion som läste från KPIer Stor-GBG.xlsx
+    Sparad för referens, använd load_kpi_data_from_file() istället
+    """
+    try:
         if base_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            base_path = os.path.join(script_dir, 'data')
+            base_path = os.path.dirname(script_dir)
 
         kpi_file = os.path.join(base_path, 'KPIer Stor-GBG.xlsx')
 
@@ -342,6 +370,8 @@ def load_vc_budget(enhet_kst, manad_str, base_path=None):
     """
     Hämtar budget-data för VC från "Intäkt Budget VC"
 
+    UPPDATERAD 2026-05-03: Använder enhetsnamn-mappar
+
     Returns:
         dict: {
             'listning': int,
@@ -351,9 +381,11 @@ def load_vc_budget(enhet_kst, manad_str, base_path=None):
     try:
         if base_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            base_path = os.path.join(script_dir, 'data')
+            base_path = os.path.dirname(script_dir)
 
-        enhet_path = os.path.join(base_path, enhet_kst)
+        # Hämta mappnamn från INFO.xlsx
+        folder_name = get_enhet_folder_name(enhet_kst, base_path)
+        enhet_path = os.path.join(base_path, folder_name)
 
         # Hitta Intäkt Budget VC-filen
         vc_files = glob.glob(os.path.join(enhet_path, 'Intäkt Budget VC*.xlsx'))
@@ -629,9 +661,17 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
 
     # Hämta ALL KPI-data från INFO.xlsx FÖRST (behövs för både listning och personalkostnad)
     info_data = {}
-    if load_all_kpi_from_info:
+    if load_all_kpi_for_enhet:
         try:
-            info_data = load_all_kpi_from_info(enhet_kst, manad_str, base_path)
+            kpi_data = load_all_kpi_for_enhet(enhet_kst, manad_str, base_path)
+            # Konvertera till format som resten av koden förväntar sig
+            info_data = {
+                'listning_actual': int(kpi_data['listning']) if kpi_data['listning'] else 0,
+                'teambesok_actual': int(kpi_data['teambesok']) if kpi_data['teambesok'] else 0,
+                'rehab_poang_actual': int(kpi_data['rehab_poang']) if kpi_data['rehab_poang'] else 0,
+                'medical_staff_actual': 0,  # Hämtas från P&L istället
+                'acg_casemix_actual': float(kpi_data['acg_casemix']) if kpi_data['acg_casemix'] else 0
+            }
         except Exception as e:
             print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
 
