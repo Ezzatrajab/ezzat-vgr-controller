@@ -625,7 +625,7 @@ def load_personalkostnad(enhet_kst, manad_str, base_path=None):
             budget_val = medical_staff_budget.iloc[0].iloc[col_idx_budget]
 
         return {
-            'actual': abs(float(actual_val)) if pd.notna(actual_val) else 0,
+            'actual': abs(float(actual_val)) * 1000 if pd.notna(actual_val) else 0,
             'budget': abs(float(budget_val)) if pd.notna(budget_val) else 0
         }
 

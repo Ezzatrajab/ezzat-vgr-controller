@@ -284,7 +284,19 @@ def load_all_kpi_for_enhet(kst: str, manad_str: str, base_path=None) -> Dict[str
     if not enhet_namn:
         return {'listning': None, 'acg_casemix': None, 'teambesok': None, 'rehab_poang': None}
 
-    # Hantera specialfall för kombinerade enheter
+    # Hantera specialfall för kombinerade enheter och namnvariationer
+    # Brålanda-Torpa (003) i Listning men bara "Torpa" i andra KPIer
+    if kst == '003':
+        # Torpa har speciellt namn "Brålanda-Torpa" i Listning-sektionen
+        listning = load_kpi_from_info('Listning', 'Brålanda-Torpa', manad_str, base_path)
+        acg_casemix = load_acg_casemix_from_info(enhet_namn, manad_str, base_path)
+        return {
+            'listning': listning,
+            'acg_casemix': acg_casemix,
+            'teambesok': None,
+            'rehab_poang': None
+        }
+
     # Åby-Kållered (108-109) och Avenyn-Lorensberg (302-303)
     if kst == '108-109':
         # Summera Åby + Kållered (båda VC)
