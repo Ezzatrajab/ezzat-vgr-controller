@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Backup files
+*_backup*.py
+*_BACKUP*.py
+*_OLD*.py
+*_WORKING*.py
+*_FINAL*.py
+
+# Test files
+test_*.py
+
+# Markdown documentation (keep only essential)
+BUSINESS_CASE*.md
+FINAL_FIX.md
+STARTA_OM_APPEN.md
+ÄNDRINGAR*.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
