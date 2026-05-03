@@ -629,9 +629,11 @@ def show_start_page():
         key = f"{region} {typ}"
         enheter_grupper[key].append((kst, data['enhet_namn'], data['vec']))
 
-    # Stor-Göteborg - VC och Rehab bredvid varandra
+    # Stor-Göteborg - VC och Rehab bredvid varandra (med mindre gap)
     st.markdown("<h2 style='text-align: center; color: #1f77b4; margin: 30px 0 20px 0;'>🏙️ Stor-Göteborg</h2>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
+
+    # Använd container för att centrera och minska gap
+    col_spacer1, col1, col2, col_spacer2 = st.columns([1, 5, 5, 1])
 
     with col1:
         # Stor-Göteborg VC
@@ -657,9 +659,11 @@ def show_start_page():
             </div>
             """, unsafe_allow_html=True)
 
-    # Tätort - VC och Rehab bredvid varandra
+    # Tätort - VC och Rehab bredvid varandra (med mindre gap)
     st.markdown("<h2 style='text-align: center; color: #f5576c; margin: 40px 0 20px 0;'>🏘️ Tätort</h2>", unsafe_allow_html=True)
-    col3, col4 = st.columns(2)
+
+    # Använd container för att centrera och minska gap
+    col_spacer3, col3, col4, col_spacer4 = st.columns([1, 5, 5, 1])
 
     with col3:
         # Tätort VC
@@ -784,18 +788,18 @@ def main():
     # === START ===
     if page == "🏠 Start":
         show_start_page()
-        return
 
-    # Hämta enhetens data
-    enhet_info = ENHETER_DATA[vald_enhet_kst]
-    # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
-    current_data = get_current_data(vald_enhet_kst, vald_manad)
+    # Hämta enhetens data för andra sidor
+    elif page in ["📊 Översikt", "📈 Enhetsvy", "💬 VEC Kommentarer"]:
+        enhet_info = ENHETER_DATA[vald_enhet_kst]
+        # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
+        current_data = get_current_data(vald_enhet_kst, vald_manad)
 
-    # Är det en Rehab-enhet?
-    is_rehab = enhet_info['typ'] == 'Rehab'
+        # Är det en Rehab-enhet?
+        is_rehab = enhet_info['typ'] == 'Rehab'
 
-    # === ÖVERSIKT ===
-    if page == "📊 Översikt":
+        # === ÖVERSIKT ===
+        if page == "📊 Översikt":
         st.header(f"🏠 Översikt - {vald_manad_namn}")
         st.subheader(f"**{enhet_info['enhet_namn']}** ({enhet_info['typ']}) - KST: {vald_enhet_kst}")
 
