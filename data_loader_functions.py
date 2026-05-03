@@ -70,7 +70,7 @@ def get_file_paths(enhet_kst, base_path=None):
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)  # VGR Alla enheter
+        base_path = os.path.join(script_dir, "data")  # Dashboard/data
 
     # Hämta mappnamn från INFO.xlsx
     folder_name = get_enhet_folder_name(enhet_kst, base_path)
@@ -176,7 +176,7 @@ def load_kpi_data_from_file_OLD(enhet_kst, manad_str, base_path=None):
     try:
         if base_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            base_path = os.path.dirname(script_dir)  # VGR Alla enheter
+            base_path = os.path.join(script_dir, "data")  # Dashboard/data
 
         kpi_file = os.path.join(base_path, 'KPIer Stor-GBG.xlsx')
 
@@ -381,7 +381,7 @@ def load_vc_budget(enhet_kst, manad_str, base_path=None):
     try:
         if base_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            base_path = os.path.dirname(script_dir)  # VGR Alla enheter
+            base_path = os.path.join(script_dir, "data")  # Dashboard/data
 
         # Hämta mappnamn från INFO.xlsx
         folder_name = get_enhet_folder_name(enhet_kst, base_path)

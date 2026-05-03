@@ -75,7 +75,7 @@ def get_enhet_folder_name(kst: str, base_path=None) -> str:
     # För enhetsmappar, använd alltid VGR Alla enheter-mappen (en nivå upp från Dashboard)
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.dirname(script_dir)  # VGR Alla enheter
+        base_path = os.path.join(script_dir, 'data')  # Dashboard/data
 
     mappings = load_org_mappings(None)  # INFO.xlsx finns i Dashboard
     full_name = mappings['kst_to_full_name'].get(kst, '')
