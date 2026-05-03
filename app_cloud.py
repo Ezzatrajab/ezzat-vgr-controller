@@ -563,20 +563,9 @@ def show_start_page():
     bakgrund_path = os.path.join(base_path, "Bakgrund - app.png")
     logo_path = os.path.join(base_path, "MTG Logo.png")
 
-    # CSS för bakgrund och styling
-    page_bg_css = ""
-    if os.path.exists(bakgrund_path):
-        with open(bakgrund_path, "rb") as f:
-            bg_data = base64.b64encode(f.read()).decode()
-        page_bg_css = f"""
+    # CSS för styling (utan bakgrund)
+    page_bg_css = """
         <style>
-        .stApp {{
-            background-image: url("data:image/png;base64,{bg_data}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }}
         .content-box {{
             background-color: rgba(255, 255, 255, 0.95);
             padding: 30px;
@@ -640,12 +629,13 @@ def show_start_page():
         key = f"{region} {typ}"
         enheter_grupper[key].append((kst, data['enhet_namn'], data['vec']))
 
-    # Visa i 2 kolumner
-    col_left, col_right = st.columns(2)
+    # Stor-Göteborg - VC och Rehab bredvid varandra
+    st.markdown("<h2 style='text-align: center; color: #1f77b4; margin: 30px 0 20px 0;'>🏙️ Stor-Göteborg</h2>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
 
-    with col_left:
+    with col1:
         # Stor-Göteborg VC
-        st.markdown("<div class='group-header'>🏥 Stor-Göteborg - Vårdcentraler</div>", unsafe_allow_html=True)
+        st.markdown("<div class='group-header'>🏥 Vårdcentraler</div>", unsafe_allow_html=True)
         st.markdown(f"**{len(enheter_grupper['Stor-Göteborg VC'])} enheter**")
         for kst, namn, vec in sorted(enheter_grupper['Stor-Göteborg VC'], key=lambda x: x[1]):
             st.markdown(f"""
@@ -655,20 +645,9 @@ def show_start_page():
             </div>
             """, unsafe_allow_html=True)
 
-        # Tätort VC
-        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);'>🏥 Tätort - Vårdcentraler</div>", unsafe_allow_html=True)
-        st.markdown(f"**{len(enheter_grupper['Tätort VC'])} enheter**")
-        for kst, namn, vec in sorted(enheter_grupper['Tätort VC'], key=lambda x: x[1]):
-            st.markdown(f"""
-            <div class='enhet-card' style='border-left-color: #f5576c;'>
-                <strong>{kst}</strong> - {namn}<br>
-                <small style='color: #666;'>VEC: {vec}</small>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with col_right:
+    with col2:
         # Stor-Göteborg Rehab
-        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);'>🏃 Stor-Göteborg - Rehab</div>", unsafe_allow_html=True)
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);'>🏃 Rehab</div>", unsafe_allow_html=True)
         st.markdown(f"**{len(enheter_grupper['Stor-Göteborg Rehab'])} enheter**")
         for kst, namn, vec in sorted(enheter_grupper['Stor-Göteborg Rehab'], key=lambda x: x[1]):
             st.markdown(f"""
@@ -678,8 +657,25 @@ def show_start_page():
             </div>
             """, unsafe_allow_html=True)
 
+    # Tätort - VC och Rehab bredvid varandra
+    st.markdown("<h2 style='text-align: center; color: #f5576c; margin: 40px 0 20px 0;'>🏘️ Tätort</h2>", unsafe_allow_html=True)
+    col3, col4 = st.columns(2)
+
+    with col3:
+        # Tätort VC
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);'>🏥 Vårdcentraler</div>", unsafe_allow_html=True)
+        st.markdown(f"**{len(enheter_grupper['Tätort VC'])} enheter**")
+        for kst, namn, vec in sorted(enheter_grupper['Tätort VC'], key=lambda x: x[1]):
+            st.markdown(f"""
+            <div class='enhet-card' style='border-left-color: #f5576c;'>
+                <strong>{kst}</strong> - {namn}<br>
+                <small style='color: #666;'>VEC: {vec}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with col4:
         # Tätort Rehab
-        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);'>🏃 Tätort - Rehab</div>", unsafe_allow_html=True)
+        st.markdown("<div class='group-header' style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);'>🏃 Rehab</div>", unsafe_allow_html=True)
         st.markdown(f"**{len(enheter_grupper['Tätort Rehab'])} enheter**")
         for kst, namn, vec in sorted(enheter_grupper['Tätort Rehab'], key=lambda x: x[1]):
             st.markdown(f"""
