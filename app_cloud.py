@@ -800,189 +800,189 @@ def main():
 
         # === ÖVERSIKT ===
         if page == "📊 Översikt":
-        st.header(f"🏠 Översikt - {vald_manad_namn}")
-        st.subheader(f"**{enhet_info['enhet_namn']}** ({enhet_info['typ']}) - KST: {vald_enhet_kst}")
+            st.header(f"🏠 Översikt - {vald_manad_namn}")
+            st.subheader(f"**{enhet_info['enhet_namn']}** ({enhet_info['typ']}) - KST: {vald_enhet_kst}")
 
-        # KPI-rader (olika för VC vs Rehab)
-        if not is_rehab:
-            # VC: Visa Listning, ACG Casemix, FTE
-            col1, col2, col3 = st.columns(3)
+            # KPI-rader (olika för VC vs Rehab)
+            if not is_rehab:
+                # VC: Visa Listning, ACG Casemix, FTE
+                col1, col2, col3 = st.columns(3)
 
-            # Listning
-            with col1:
-                st.markdown("#### 👥 Listning")
-                actual = current_data['listning']['actual']
-                budget = current_data['listning']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
-
-                st.metric("Antal listade", f"{actual:,}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,}")
-
-            # ACG Casemix
-            with col2:
-                st.markdown("#### 📊 ACG Casemix")
-                actual = current_data['acg_casemix']['actual']
-                budget = current_data['acg_casemix']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
-
-                st.metric("Casemix", f"{actual:.2f}", f"{avv:+.2f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:.2f}")
-
-            # FTE Total
-            with col3:
-                st.markdown("#### 👔 FTE Total")
-                actual = current_data['fte']['actual']
-                budget = current_data['fte']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct, is_cost=True)
-
-                st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:.1f}")
-
-        else:
-            # REHAB: Visa Intäkter (P&L), Rehab-poäng (KPI), TeamBesök (KPI), FTE, Personalkostnad
-            st.markdown("### 📊 Nyckeltal - Rehab")
-
-            # Första raden: Intäkter och Poäng från filer
-            col1, col2, col3 = st.columns(3)
-
-            # Rehab Intäkter (från P&L Actual/Budget)
-            with col1:
-                st.markdown("#### 💰 Intäkter Total")
-                actual = current_data['intakter_totalt']['actual']
-                budget = current_data['intakter_totalt']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
-
-                st.metric("Revenue Total (P&L)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,.0f}")
-
-            # Rehab Poäng (från Poänguppföljning Rehab 2026)
-            with col2:
-                st.markdown("#### 💪 Rehab Poäng")
-                actual = current_data.get('rehab_poang_actual', 0)
-                budget_poang = current_data.get('rehab_poang_budget', 0)
-
-                if actual > 0 or budget_poang > 0:
-                    # Beräkna avvikelse
-                    avv = actual - budget_poang
-                    avv_pct = (avv / budget_poang * 100) if budget_poang > 0 else 0
+                # Listning
+                with col1:
+                    st.markdown("#### 👥 Listning")
+                    actual = current_data['listning']['actual']
+                    budget = current_data['listning']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
                     traffic, _ = get_traffic_light(avv_pct)
 
-                    st.metric("Poäng (Actual)", f"{int(actual):,}", f"{int(avv):+,} ({avv_pct:+.1f}%)")
-                    st.markdown(f"{traffic} **Budget:** {int(budget_poang):,} poäng")
-                    st.markdown("📊 Från Poänguppföljning Rehab 2026")
+                    st.metric("Antal listade", f"{actual:,}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:,}")
 
-                    # Visa top performers (≥200 poäng)
-                    top_performers = current_data.get('top_performers', [])
-                    if top_performers:
-                        st.markdown("##### ⭐ Top Performers (≥200 poäng)")
-                        for person in top_performers:
-                            st.markdown(f"**{person['namn']}**: {person['poang']:.0f} poäng 🎉")
-                else:
-                    st.info("Ingen data ännu")
+                # ACG Casemix
+                with col2:
+                    st.markdown("#### 📊 ACG Casemix")
+                    actual = current_data['acg_casemix']['actual']
+                    budget = current_data['acg_casemix']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct)
 
-            # TeamBesök (från KPI-fil)
-            with col3:
-                st.markdown("#### 🏥 TeamBesök (KPI)")
-                actual = current_data.get('teambesok', 0)
-                note = current_data.get('teambesok_note', '')
+                    st.metric("Casemix", f"{actual:.2f}", f"{avv:+.2f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:.2f}")
 
-                if actual > 0:
-                    st.metric("TeamBesök", f"{int(actual)}")
-                    if note:
-                        st.warning(f"ℹ️ {note}")
+                # FTE Total
+                with col3:
+                    st.markdown("#### 👔 FTE Total")
+                    actual = current_data['fte']['actual']
+                    budget = current_data['fte']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct, is_cost=True)
+
+                    st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:.1f}")
+
+            else:
+                # REHAB: Visa Intäkter (P&L), Rehab-poäng (KPI), TeamBesök (KPI), FTE, Personalkostnad
+                st.markdown("### 📊 Nyckeltal - Rehab")
+
+                # Första raden: Intäkter och Poäng från filer
+                col1, col2, col3 = st.columns(3)
+
+                # Rehab Intäkter (från P&L Actual/Budget)
+                with col1:
+                    st.markdown("#### 💰 Intäkter Total")
+                    actual = current_data['intakter_totalt']['actual']
+                    budget = current_data['intakter_totalt']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct)
+
+                    st.metric("Revenue Total (P&L)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:,.0f}")
+
+                # Rehab Poäng (från Poänguppföljning Rehab 2026)
+                with col2:
+                    st.markdown("#### 💪 Rehab Poäng")
+                    actual = current_data.get('rehab_poang_actual', 0)
+                    budget_poang = current_data.get('rehab_poang_budget', 0)
+
+                    if actual > 0 or budget_poang > 0:
+                        # Beräkna avvikelse
+                        avv = actual - budget_poang
+                        avv_pct = (avv / budget_poang * 100) if budget_poang > 0 else 0
+                        traffic, _ = get_traffic_light(avv_pct)
+
+                        st.metric("Poäng (Actual)", f"{int(actual):,}", f"{int(avv):+,} ({avv_pct:+.1f}%)")
+                        st.markdown(f"{traffic} **Budget:** {int(budget_poang):,} poäng")
+                        st.markdown("📊 Från Poänguppföljning Rehab 2026")
+
+                        # Visa top performers (≥200 poäng)
+                        top_performers = current_data.get('top_performers', [])
+                        if top_performers:
+                            st.markdown("##### ⭐ Top Performers (≥200 poäng)")
+                            for person in top_performers:
+                                st.markdown(f"**{person['namn']}**: {person['poang']:.0f} poäng 🎉")
                     else:
-                        st.markdown("📊 Data från KPI-filen")
-                else:
-                    st.info("Ingen data tillgänglig")
+                        st.info("Ingen data ännu")
+
+                # TeamBesök (från KPI-fil)
+                with col3:
+                    st.markdown("#### 🏥 TeamBesök (KPI)")
+                    actual = current_data.get('teambesok', 0)
+                    note = current_data.get('teambesok_note', '')
+
+                    if actual > 0:
+                        st.metric("TeamBesök", f"{int(actual)}")
+                        if note:
+                            st.warning(f"ℹ️ {note}")
+                        else:
+                            st.markdown("📊 Data från KPI-filen")
+                    else:
+                        st.info("Ingen data tillgänglig")
+
+                st.markdown("---")
+
+                # Andra raden: FTE och Personalkostnad
+                col4, col5 = st.columns(2)
+
+                # FTE
+                with col4:
+                    st.markdown("#### 👔 FTE Total")
+                    actual = current_data['fte']['actual']
+                    budget = current_data['fte']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct)
+
+                    st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:.1f}")
+
+                # Personalkostnad
+                with col5:
+                    st.markdown("#### 💰 Personalkostnad")
+                    actual = current_data['personalkostnad']['actual']
+                    budget = current_data['personalkostnad']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct, is_cost=True)
+
+                    st.metric("Kostnad (kr)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:,.0f}")
 
             st.markdown("---")
 
-            # Andra raden: FTE och Personalkostnad
-            col4, col5 = st.columns(2)
+            # Personalkostnad och FTE för VC
+            if not is_rehab:
+                col5, col6 = st.columns(2)
 
-            # FTE
-            with col4:
-                st.markdown("#### 👔 FTE Total")
-                actual = current_data['fte']['actual']
-                budget = current_data['fte']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
+                with col5:
+                    st.markdown("#### 💰 Personalkostnad")
+                    actual = current_data['personalkostnad']['actual']
+                    budget = current_data['personalkostnad']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct, is_cost=True)
 
-                st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:.1f}")
+                    st.metric("Kostnad (kr)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:,.0f}")
 
-            # Personalkostnad
-            with col5:
-                st.markdown("#### 💰 Personalkostnad")
-                actual = current_data['personalkostnad']['actual']
-                budget = current_data['personalkostnad']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct, is_cost=True)
+                with col6:
+                    st.markdown("#### 👔 FTE Total")
+                    actual = current_data['fte']['actual']
+                    budget = current_data['fte']['budget']
+                    avv = actual - budget
+                    avv_pct = (avv / budget) * 100 if budget > 0 else 0
+                    traffic, _ = get_traffic_light(avv_pct)
 
-                st.metric("Kostnad (kr)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,.0f}")
+                    st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
+                    st.markdown(f"{traffic} Budget: {budget:.1f}")
 
-        st.markdown("---")
+                st.markdown("---")
 
-        # Personalkostnad och FTE för VC
-        if not is_rehab:
-            col5, col6 = st.columns(2)
+            # Avvikelseanalys
+            st.markdown("### 🔍 Avvikelseanalys - Personalkostnader")
 
-            with col5:
-                st.markdown("#### 💰 Personalkostnad")
-                actual = current_data['personalkostnad']['actual']
-                budget = current_data['personalkostnad']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct, is_cost=True)
+            analyser = analyze_personal_avvikelser(vald_enhet_kst, vald_manad)
 
-                st.metric("Kostnad (kr)", f"{actual:,.0f}", f"{avv:+,.0f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:,.0f}")
+            if analyser:
+                for analys in analyser:
+                    if analys['kostnad_avv_pct'] < -15:
+                        box_class = "yellow-box" if analys['kostnad_avv_pct'] > -30 else "red-box"
+                    else:
+                        box_class = "yellow-box" if analys['kostnad_avv_pct'] < 30 else "red-box"
 
-            with col6:
-                st.markdown("#### 👔 FTE Total")
-                actual = current_data['fte']['actual']
-                budget = current_data['fte']['budget']
-                avv = actual - budget
-                avv_pct = (avv / budget) * 100 if budget > 0 else 0
-                traffic, _ = get_traffic_light(avv_pct)
-
-                st.metric("FTE", f"{actual:.1f}", f"{avv:+.1f} ({avv_pct:+.1f}%)")
-                st.markdown(f"{traffic} Budget: {budget:.1f}")
-
-            st.markdown("---")
-
-        # Avvikelseanalys
-        st.markdown("### 🔍 Avvikelseanalys - Personalkostnader")
-
-        analyser = analyze_personal_avvikelser(vald_enhet_kst, vald_manad)
-
-        if analyser:
-            for analys in analyser:
-                if analys['kostnad_avv_pct'] < -15:
-                    box_class = "yellow-box" if analys['kostnad_avv_pct'] > -30 else "red-box"
-                else:
-                    box_class = "yellow-box" if analys['kostnad_avv_pct'] < 30 else "red-box"
-
-                st.markdown(f"""
-                <div class="{box_class}">
-                <b>{analys['status']} - {analys['kategori']}</b><br>
-                {analys['förklaring']}
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("")
-        else:
-            st.markdown('<div class="green-box">🟢 Alla personalkategorier inom acceptabelt intervall</div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="{box_class}">
+                    <b>{analys['status']} - {analys['kategori']}</b><br>
+                    {analys['förklaring']}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("")
+            else:
+                st.markdown('<div class="green-box">🟢 Alla personalkategorier inom acceptabelt intervall</div>', unsafe_allow_html=True)
 
     # === ENHETSVY ===
     elif page == "📈 Enhetsvy":
