@@ -975,8 +975,13 @@ def main():
 
     # === ENHETSVY ===
     elif page == "📈 Enhetsvy":
-        st.header(f"📊 {enhet_info['enhet_namn']} (KST: {vald_enhet_kst})")
-        st.markdown(f"**VEC:** {enhet_info['vec']} | **Region:** {enhet_info['region']} | **Typ:** {enhet_info['typ']} | **Period:** {vald_manad_namn}")
+        try:
+            st.header(f"📊 {enhet_info['enhet_namn']} (KST: {vald_enhet_kst})")
+            st.markdown(f"**VEC:** {enhet_info['vec']} | **Region:** {enhet_info['region']} | **Typ:** {enhet_info['typ']} | **Period:** {vald_manad_namn}")
+        except Exception as e:
+            st.error(f"❌ FEL vid visning av Enhetsvy: {e}")
+            st.exception(e)
+            st.stop()
 
         tab1, tab2 = st.tabs(["💰 Personal", "📈 Trender"])
 
@@ -1100,8 +1105,13 @@ def main():
 
     # === VEC KOMMENTARER ===
     elif page == "💬 VEC Kommentarer":
-        st.header(f"💬 VEC Kommentarer - {vald_manad_namn}")
-        st.markdown(f"**Enhet:** {enhet_info['enhet_namn']} | **VEC:** {enhet_info['vec']}")
+        try:
+            st.header(f"💬 VEC Kommentarer - {vald_manad_namn}")
+            st.markdown(f"**Enhet:** {enhet_info['enhet_namn']} | **VEC:** {enhet_info['vec']}")
+        except Exception as e:
+            st.error(f"❌ FEL vid visning av VEC Kommentarer: {e}")
+            st.exception(e)
+            st.stop()
 
         # Visa befintliga kommentarer för denna enhet
         st.markdown("---")
