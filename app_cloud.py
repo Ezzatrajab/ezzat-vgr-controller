@@ -780,12 +780,19 @@ def main():
 
     # Hämta enhetens data för andra sidor
     elif page in ["📊 Översikt", "📈 Enhetsvy", "💬 VEC Kommentarer"]:
-        enhet_info = ENHETER_DATA[vald_enhet_kst]
-        # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
-        current_data = get_current_data(vald_enhet_kst, vald_manad)
+        try:
+            enhet_info = ENHETER_DATA[vald_enhet_kst]
+            # Använd get_current_data() för att hämta färsk data från P&L och KPI-filer
+            current_data = get_current_data(vald_enhet_kst, vald_manad)
 
-        # Är det en Rehab-enhet?
-        is_rehab = enhet_info['typ'] == 'Rehab'
+            # Är det en Rehab-enhet?
+            is_rehab = enhet_info['typ'] == 'Rehab'
+        except Exception as e:
+            st.error(f"❌ KRITISKT FEL vid datahämtning för {page}")
+            st.error(f"Enhet: {vald_enhet_kst}, Månad: {vald_manad}")
+            st.error(f"Fel: {str(e)}")
+            st.exception(e)
+            st.stop()
 
         # === ÖVERSIKT ===
         if page == "📊 Översikt":
@@ -975,6 +982,7 @@ def main():
 
     # === ENHETSVY ===
     elif page == "📈 Enhetsvy":
+        st.write("🔍 DEBUG: Enhetsvy körs...")  # DEBUG
         try:
             st.header(f"📊 {enhet_info['enhet_namn']} (KST: {vald_enhet_kst})")
             st.markdown(f"**VEC:** {enhet_info['vec']} | **Region:** {enhet_info['region']} | **Typ:** {enhet_info['typ']} | **Period:** {vald_manad_namn}")
@@ -1105,6 +1113,7 @@ def main():
 
     # === VEC KOMMENTARER ===
     elif page == "💬 VEC Kommentarer":
+        st.write("🔍 DEBUG: VEC Kommentarer körs...")  # DEBUG
         try:
             st.header(f"💬 VEC Kommentarer - {vald_manad_namn}")
             st.markdown(f"**Enhet:** {enhet_info['enhet_namn']} | **VEC:** {enhet_info['vec']}")
