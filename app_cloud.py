@@ -461,6 +461,53 @@ def calculate_rehab_poang(intakter_3053):
         return 0
     return intakter_3053 / 523
 
+def get_vgr_totals(manad):
+    """
+    Aggregera totaler för hela VGR (alla 37 enheter) för en given månad.
+
+    Returns:
+        dict: {
+            'total_listning': {'actual': X, 'budget': Y},
+            'total_fte': {'actual': X, 'budget': Y},
+            'total_personalkostnad': {'actual': X, 'budget': Y},
+            'total_rehab_poang': {'actual': X, 'budget': Y}
+        }
+    """
+    totals = {
+        'total_listning': {'actual': 0, 'budget': 0},
+        'total_fte': {'actual': 0, 'budget': 0},
+        'total_personalkostnad': {'actual': 0, 'budget': 0},
+        'total_rehab_poang': {'actual': 0, 'budget': 0}
+    }
+
+    # Loopa genom alla 37 enheter
+    for kst in ENHETER_DATA.keys():
+        try:
+            data = get_current_data(kst, manad)
+            enhet_typ = ENHETER_DATA[kst]['typ']
+
+            # FTE och Personalkostnad (alla enheter)
+            totals['total_fte']['actual'] += data['fte']['actual']
+            totals['total_fte']['budget'] += data['fte']['budget']
+            totals['total_personalkostnad']['actual'] += data['personalkostnad']['actual']
+            totals['total_personalkostnad']['budget'] += data['personalkostnad']['budget']
+
+            # Listning (bara VC-enheter)
+            if enhet_typ == 'VC':
+                totals['total_listning']['actual'] += data['listning']['actual']
+                totals['total_listning']['budget'] += data['listning']['budget']
+
+            # Rehab Poäng (bara Rehab-enheter)
+            if enhet_typ == 'Rehab':
+                totals['total_rehab_poang']['actual'] += data.get('rehab_poang_actual', 0)
+                totals['total_rehab_poang']['budget'] += data.get('rehab_poang_budget', 0)
+
+        except Exception as e:
+            # Om en enhet misslyckas, fortsätt med nästa
+            continue
+
+    return totals
+
 def get_traffic_light(avvikelse_pct, is_cost=False):
     """Returnera trafikljus baserat på avvikelse%"""
     if is_cost:
@@ -797,6 +844,64 @@ def main():
         # === ÖVERSIKT ===
         if page == "📊 Översikt":
             st.header(f"🏠 Översikt - {vald_manad_namn}")
+
+            # VGR-totaler (alla 37 enheter)
+            st.markdown("### 🌍 VGR Totalt (37 enheter)")
+            vgr_totals = get_vgr_totals(vald_manad)
+
+            # Rad 1: Listning och FTE
+            col_a, col_b = st.columns(2)
+
+            with col_a:
+                st.markdown("#### 👥 Total Listning (21 VC)")
+                list_actual = vgr_totals['total_listning']['actual']
+                list_budget = vgr_totals['total_listning']['budget']
+                list_avv = list_actual - list_budget
+                list_avv_pct = (list_avv / list_budget * 100) if list_budget > 0 else 0
+                traffic, _ = get_traffic_light(list_avv_pct)
+
+                st.metric("Listade Patienter", f"{list_actual:,}", f"{list_avv:+,.0f} ({list_avv_pct:+.1f}%)")
+                st.markdown(f"{traffic} **Budget:** {list_budget:,}")
+
+            with col_b:
+                st.markdown("#### 👔 Total FTE (37 enheter)")
+                fte_actual = vgr_totals['total_fte']['actual']
+                fte_budget = vgr_totals['total_fte']['budget']
+                fte_avv = fte_actual - fte_budget
+                fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
+                traffic, _ = get_traffic_light(fte_avv_pct)
+
+                st.metric("FTE Total", f"{fte_actual:.1f}", f"{fte_avv:+.1f} ({fte_avv_pct:+.1f}%)")
+                st.markdown(f"{traffic} **Budget:** {fte_budget:.1f}")
+
+            # Rad 2: Personalkostnad och Rehab Poäng
+            col_c, col_d = st.columns(2)
+
+            with col_c:
+                st.markdown("#### 💰 Total Personalkostnad")
+                pk_actual = vgr_totals['total_personalkostnad']['actual']
+                pk_budget = vgr_totals['total_personalkostnad']['budget']
+                pk_avv = pk_actual - pk_budget
+                pk_avv_pct = (pk_avv / pk_budget * 100) if pk_budget > 0 else 0
+                traffic, _ = get_traffic_light(pk_avv_pct, is_cost=True)
+
+                st.metric("Kostnad (kr)", f"{pk_actual:,.0f}", f"{pk_avv:+,.0f} ({pk_avv_pct:+.1f}%)")
+                st.markdown(f"{traffic} **Budget:** {pk_budget:,.0f}")
+
+            with col_d:
+                st.markdown("#### 💪 Total Rehab Poäng (16 Rehab)")
+                rp_actual = vgr_totals['total_rehab_poang']['actual']
+                rp_budget = vgr_totals['total_rehab_poang']['budget']
+                rp_avv = rp_actual - rp_budget
+                rp_avv_pct = (rp_avv / rp_budget * 100) if rp_budget > 0 else 0
+                traffic, _ = get_traffic_light(rp_avv_pct)
+
+                st.metric("Rehab Poäng", f"{int(rp_actual):,}", f"{int(rp_avv):+,} ({rp_avv_pct:+.1f}%)")
+                st.markdown(f"{traffic} **Budget:** {int(rp_budget):,}")
+
+            st.markdown("---")
+
+            # Enhetsspecifik data
             st.subheader(f"**{enhet_info['enhet_namn']}** ({enhet_info['typ']}) - KST: {vald_enhet_kst}")
 
             # KPI-rader (olika för VC vs Rehab)
