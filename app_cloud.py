@@ -416,12 +416,9 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_budget_antal_anstallda'] = rehab_budget.get('antal_anstallda', 0)
         base_data['rehab_budget_intakt'] = rehab_budget.get('budgeterad_intakt', 0)
 
-        # Hämta Rehab-poäng från KPIer-filen (ALLA enheter inkl. Tätort)
-        kpi_data = load_kpi_data()
-        if enhet_kst in kpi_data.get('rehab_poang', {}):
-            base_data['rehab_poang_actual'] = kpi_data['rehab_poang'][enhet_kst].get(manad, 0)
-        else:
-            base_data['rehab_poang_actual'] = 0
+        # Använd Rehab-data från real_data (redan laddad av load_all_data_for_enhet)
+        base_data['rehab_poang_actual'] = real_data.get('rehab_poang_actual', 0)
+        base_data['teambesok'] = real_data.get('teambesok_actual', 0)  # Används som 'teambesok' i resten av koden
 
         # Budget och top performers från Poänguppföljning (bara Stor-Göteborg)
         try:
@@ -432,26 +429,6 @@ def get_current_data(enhet_kst, manad):
             # För Tätort-enheter saknas budget/top performers - OK
             base_data['rehab_poang_budget'] = 0
             base_data['top_performers'] = []
-
-        # Hämta TeamBesök (om vald månad saknas, använd senaste tillgängliga)
-        if enhet_kst in kpi_data.get('teambesok', {}):
-            teambesok_val = kpi_data['teambesok'][enhet_kst].get(manad, 0)
-
-            # Om vald månad saknar data, hitta senaste tillgängliga månad
-            if teambesok_val == 0:
-                available_months = {m: v for m, v in kpi_data['teambesok'][enhet_kst].items() if v > 0}
-                if available_months:
-                    latest_month = max(available_months.keys())
-                    teambesok_val = available_months[latest_month]
-                    base_data['teambesok'] = teambesok_val
-                    base_data['teambesok_note'] = f"Data från {latest_month} (senaste tillgängliga)"
-                else:
-                    base_data['teambesok'] = 0
-            else:
-                base_data['teambesok'] = teambesok_val
-        else:
-            # Enhet saknas i KPIer-filen
-            base_data['teambesok'] = 0
 
     # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
     else:

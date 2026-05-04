@@ -387,8 +387,12 @@ def load_vc_budget(enhet_kst, manad_str, base_path=None):
         folder_name = get_enhet_folder_name(enhet_kst, base_path)
         enhet_path = os.path.join(base_path, folder_name)
 
-        # Hitta Intäkt Budget VC-filen
+        # Hitta Intäkt Budget VC-filen (flera möjliga namnformat)
         vc_files = glob.glob(os.path.join(enhet_path, 'Intäkt Budget VC*.xlsx'))
+
+        # Fallback: Försök med "Intäktsbudget (Enhet)" för Stor-Göteborg enheter
+        if not vc_files:
+            vc_files = glob.glob(os.path.join(enhet_path, '*Intäktsbudget (Enhet)*.xlsx'))
 
         if not vc_files:
             print(f"Ingen Intäkt Budget VC-fil hittades för {enhet_kst}")
@@ -403,27 +407,44 @@ def load_vc_budget(enhet_kst, manad_str, base_path=None):
                        'July', 'August', 'September', 'October', 'November', 'December']
         month_name = month_names[month_num - 1]
 
-        # Hitta kolumn-index för månaden
+        # Hitta kolumn-index för månaden - leta på rad 0, rad 1, eller rad 3
         col_idx = None
-        for i, val in enumerate(df.iloc[0]):
-            if val == month_name:
-                col_idx = i
-                break
+        for search_row in [0, 1, 3]:
+            if search_row < len(df):
+                for i, val in enumerate(df.iloc[search_row]):
+                    if str(val) == month_name:
+                        col_idx = i
+                        break
+                if col_idx is not None:
+                    break
 
         if col_idx is None:
             print(f"Månad {month_name} hittades inte i budget-fil för {enhet_kst}")
             return {'listning': 0, 'acg_casemix': 0}
 
-        # Läs värden:
-        # Rad 8 (index 7): ACG casemix % (Vårdtyngd)
-        # Rad 9 (index 8): Antal listade patienter
+        # Hitta ACG Casemix och Listning - olika format beroende på fil
+        acg_casemix = None
+        listning = None
 
-        acg_casemix = df.iloc[7, col_idx] if pd.notna(df.iloc[7, col_idx]) else 0
-        listning = df.iloc[8, col_idx] if pd.notna(df.iloc[8, col_idx]) else 0
+        # Format 1: Leta efter rad med text-labels (för "Intäktsbudget (Enhet)"-filer)
+        for idx, row in df.iterrows():
+            if len(row) > 1:
+                row_label = str(row.iloc[1])
+                if 'ACG casemix %' in row_label and col_idx < len(row) and pd.notna(row.iloc[col_idx]):
+                    acg_casemix = row.iloc[col_idx]
+                if 'Antal listade patienter' in row_label and col_idx < len(row) and pd.notna(row.iloc[col_idx]):
+                    listning = row.iloc[col_idx]
+
+        # Format 2: Rad 7-8 (för "Intäkt Budget VC"-filer från Tätort)
+        if acg_casemix is None and len(df) > 8 and col_idx < len(df.columns):
+            if pd.notna(df.iloc[7, col_idx]):
+                acg_casemix = df.iloc[7, col_idx]
+            if pd.notna(df.iloc[8, col_idx]):
+                listning = df.iloc[8, col_idx]
 
         return {
-            'listning': int(listning),
-            'acg_casemix': float(acg_casemix)
+            'listning': int(listning) if listning and pd.notna(listning) else 0,
+            'acg_casemix': float(acg_casemix) if acg_casemix and pd.notna(acg_casemix) else 0
         }
 
     except Exception as e:
@@ -700,23 +721,19 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         data['teambesok_actual'] = 0
         data['rehab_poang_actual'] = 0
 
-    # Kolla om det är en Rehab-enhet
-    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
-        # Rehab-enhet: Lägg till Rehab-budget
-        data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
-        # Budget för VC-KPIer (hämta från budget-fil om möjligt)
-        try:
-            budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
-            data['listning_budget'] = budget_data.get('listning_budget', 0)
-            data['acg_casemix_budget'] = budget_data.get('acg_casemix_budget', 0)
-        except:
-            data['listning_budget'] = 0
-            data['acg_casemix_budget'] = 0
-    else:
-        # VC-enhet: Hämta budget från Budget-filer
+    # Hämta budget-data för ALLA enheter (både VC och Rehab)
+    try:
         budget_data = load_vc_budget(enhet_kst, manad_str, base_path)
         data['listning_budget'] = budget_data.get('listning', 0)
         data['acg_casemix_budget'] = budget_data.get('acg_casemix', 0)
+    except Exception as e:
+        print(f"Kunde inte läsa budget för {enhet_kst}: {e}")
+        data['listning_budget'] = 0
+        data['acg_casemix_budget'] = 0
+
+    # För Rehab-enheter: Lägg till extra Rehab-specifik budget
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
+        data['rehab_budget'] = load_rehab_poang_budget(enhet_kst, manad_str, base_path)
 
     return data
 
