@@ -190,6 +190,7 @@ def load_acg_casemix_from_info(enhet_namn: str, manad_str: str, base_path=None) 
         'Husaren': 'Kvarterskliniken Husaren',
         'Karlastaden': 'Kvarterskliniken Karlastaden',
         'Tanum': 'Kvarterskliniken Tanum',
+        'City': 'Citysjukhuset Plus 7 vårdcentral',  # KST 4020 använder kortnamn "City"
         'City VC': 'Citysjukhuset Plus 7 vårdcentral',
         'Torpa': 'Medpro Clinic Brålanda-Torpa Vårdcentral',
         'Noltorp': 'Medpro Clinic Noltorp Vårdcentral',

@@ -509,17 +509,26 @@ def get_vgr_totals(manad):
     return totals
 
 def get_traffic_light(avvikelse_pct, is_cost=False):
-    """Returnera trafikljus baserat på avvikelse%"""
+    """
+    Returnera trafikljus baserat på avvikelse%
+
+    is_cost=True: För kostnader (FTE, Personalkostnad)
+        - Minskning (negativt): 🟢 Grön
+        - Ökning (positivt): 🔴 Röd
+
+    is_cost=False: För intäkter/produktion (Listning, Rehab Poäng)
+        - Inom ±5%: 🟢 Grön
+        - Inom ±10%: 🟡 Gul
+        - Över ±10%: 🔴 Röd
+    """
     if is_cost:
-        if avvikelse_pct <= -5:
-            return "🟢", "green-box"
-        elif avvikelse_pct <= 0:
-            return "🟢", "green-box"
-        elif avvikelse_pct <= 5:
-            return "🟡", "yellow-box"
+        # För kostnader: Ökning = dåligt (röd), Minskning = bra (grön)
+        if avvikelse_pct < 0:
+            return "🟢", "green-box"  # Under budget
         else:
-            return "🔴", "red-box"
+            return "🔴", "red-box"  # På eller över budget
     else:
+        # För intäkter/produktion: Symmetrisk tolerans
         if abs(avvikelse_pct) <= 5:
             return "🟢", "green-box"
         elif abs(avvikelse_pct) <= 10:
@@ -674,7 +683,7 @@ def show_start_page(vald_manad, vald_manad_namn):
         fte_budget = vgr_totals['total_fte']['budget']
         fte_avv = fte_actual - fte_budget
         fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
-        traffic, _ = get_traffic_light(fte_avv_pct)
+        traffic, _ = get_traffic_light(fte_avv_pct, is_cost=True)  # FTE är en kostnad
 
         st.metric("37 enheter", f"{fte_actual:.1f}", f"{fte_avv:+.1f} ({fte_avv_pct:+.1f}%)")
         st.markdown(f"{traffic} **Budget:** {fte_budget:.1f}")
