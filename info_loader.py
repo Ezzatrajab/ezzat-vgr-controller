@@ -27,10 +27,14 @@ def load_org_mappings(base_path=None) -> Dict[str, Dict[str, str]]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
-        base_path = os.path.dirname(script_dir)
-
-    info_path = os.path.join(base_path, 'INFO.xlsx')
+        # Försök först i Dashboard-mappen (för Streamlit Cloud)
+        info_path = os.path.join(script_dir, 'INFO.xlsx')
+        if not os.path.exists(info_path):
+            # Om inte där, försök i parent directory (för lokal utveckling)
+            base_path = os.path.dirname(script_dir)
+            info_path = os.path.join(base_path, 'INFO.xlsx')
+    else:
+        info_path = os.path.join(base_path, 'INFO.xlsx')
 
     # Läs Org-fliken
     df = pd.read_excel(info_path, sheet_name='Org', skiprows=4)
@@ -130,10 +134,14 @@ def load_acg_casemix_from_info(enhet_namn: str, manad_str: str, base_path=None) 
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
-        base_path = os.path.dirname(script_dir)
-
-    info_path = os.path.join(base_path, 'INFO.xlsx')
+        # Försök först i Dashboard-mappen (för Streamlit Cloud)
+        info_path = os.path.join(script_dir, 'INFO.xlsx')
+        if not os.path.exists(info_path):
+            # Om inte där, försök i parent directory (för lokal utveckling)
+            base_path = os.path.dirname(script_dir)
+            info_path = os.path.join(base_path, 'INFO.xlsx')
+    else:
+        info_path = os.path.join(base_path, 'INFO.xlsx')
 
     # Läs INFO-fliken
     df = pd.read_excel(info_path, sheet_name='INFO', header=None)
@@ -223,10 +231,14 @@ def load_kpi_from_info(kpi_name: str, enhet_namn: str, manad_str: str, base_path
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
-        base_path = os.path.dirname(script_dir)
-
-    info_path = os.path.join(base_path, 'INFO.xlsx')
+        # Försök först i Dashboard-mappen (för Streamlit Cloud)
+        info_path = os.path.join(script_dir, 'INFO.xlsx')
+        if not os.path.exists(info_path):
+            # Om inte där, försök i parent directory (för lokal utveckling)
+            base_path = os.path.dirname(script_dir)
+            info_path = os.path.join(base_path, 'INFO.xlsx')
+    else:
+        info_path = os.path.join(base_path, 'INFO.xlsx')
 
     # Läs KPI-fliken
     df = pd.read_excel(info_path, sheet_name='KPI', header=None)
@@ -419,10 +431,14 @@ def build_enheter_data(base_path=None) -> Dict[str, Dict]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
-        base_path = os.path.dirname(script_dir)
-
-    info_path = os.path.join(base_path, 'INFO.xlsx')
+        # Försök först i Dashboard-mappen (för Streamlit Cloud)
+        info_path = os.path.join(script_dir, 'INFO.xlsx')
+        if not os.path.exists(info_path):
+            # Om inte där, försök i parent directory (för lokal utveckling)
+            base_path = os.path.dirname(script_dir)
+            info_path = os.path.join(base_path, 'INFO.xlsx')
+    else:
+        info_path = os.path.join(base_path, 'INFO.xlsx')
 
     # Läs hela Org-fliken utan skiprows för att kunna läsa region-headers
     df = pd.read_excel(info_path, sheet_name='Org', header=None)
