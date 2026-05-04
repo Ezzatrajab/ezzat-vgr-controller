@@ -675,30 +675,10 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         except Exception as e:
             print(f"Fel vid läsning från INFO.xlsx för {enhet_kst}: {e}")
 
-    # Personalkostnad:
-    # Tätort-enheter: Använd INFO.xlsx för actual (värden i hela kronor), P&L Budget för budget
-    # Stor-Göteborg: Använd P&L Actual och Budget (värden behöver ev multipliceras)
-    tatort_enheter = ['003', '005', '006', '008', '014', '305', '703', '705', '706', '708', '714', '650-670', '713']
-
-    if enhet_kst in tatort_enheter and info_data:
-        # Tätort: Hämta actual från INFO.xlsx (redan i hela kronor)
-        medical_staff = info_data.get('medical_staff_actual', 0)
-        personalkostnad_actual = abs(medical_staff) if medical_staff != 0 else 0
-
-        # Hämta budget från P&L Budget
-        personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
-        personalkostnad_budget = personalkostnad['budget']
-    else:
-        # Stor-Göteborg: Använd P&L för både actual och budget
-        personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
-        personalkostnad_actual = personalkostnad['actual']
-        personalkostnad_budget = personalkostnad['budget']
-
-        # Fallback till INFO.xlsx om P&L inte gav något
-        if personalkostnad_actual == 0 and info_data:
-            medical_staff = info_data.get('medical_staff_actual', 0)
-            if medical_staff != 0:
-                personalkostnad_actual = abs(medical_staff)
+    # Personalkostnad: Använd P&L Actual och P&L Budget för ALLA enheter
+    personalkostnad = load_personalkostnad(enhet_kst, manad_str, base_path)
+    personalkostnad_actual = personalkostnad['actual']
+    personalkostnad_budget = personalkostnad['budget']
 
     # Bas-data som returneras
     data = {
@@ -708,13 +688,17 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         'personalkostnad_budget': personalkostnad_budget,
     }
 
-    # Använd INFO-data för listning och ACG casemix
+    # Använd INFO-data för KPIer (både VC och Rehab)
     if info_data:
         data['listning_actual'] = int(info_data.get('listning_actual', 0))
         data['acg_casemix_actual'] = info_data.get('acg_casemix_actual', 0)
+        data['teambesok_actual'] = int(info_data.get('teambesok_actual', 0))
+        data['rehab_poang_actual'] = int(info_data.get('rehab_poang_actual', 0))
     else:
         data['listning_actual'] = 0
         data['acg_casemix_actual'] = 0
+        data['teambesok_actual'] = 0
+        data['rehab_poang_actual'] = 0
 
     # Kolla om det är en Rehab-enhet
     if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '715', '703', '705', '706', '708', '714', '650-670', '713']:
