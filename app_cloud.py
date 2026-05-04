@@ -84,96 +84,52 @@ st.markdown("""
 @st.cache_data(ttl=60)  # 1 minut cache för snabbare uppdateringar
 def load_rehab_intakter_from_pl(enhet_kst, manad_str):
     """
-    Läser Rehab-intäkter från Intäkt Budget Rehab-fil och Poänguppföljning.
+    Läser Rehab-intäkter från Poänguppföljning Rehab 2026.xlsx.
 
-    För Rehab-enheter:
-    - BUDGET: Läses från "Intäkt Budget Rehab" (rad 5, konto 3053) i SEK
-    - ACTUAL: Beräknas från Poänguppföljning (poäng × grundbelopp) i SEK
+    För ALLA Rehab-enheter (Stor-Göteborg + Tätort):
+    - ACTUAL och BUDGET läses från "Enheterna AO VGR" sheet
+    - För Stor-Göteborg: även top_performers från individuella sheets
+    - Intäkt (SEK) = poäng × grundbelopp
 
     Args:
-        enhet_kst: '601', '602', etc
+        enhet_kst: '601', '602', '650', '670', '703', '705', etc
         manad_str: '2026-01', '2026-02', etc
     Returns:
         {'actual': value, 'budget': value} - värden i SEK
     """
     try:
+        from rehab_poang_loader import load_rehab_poang_och_top_performers
         import os
         import glob
         from info_loader import get_enhet_folder_name
 
+        # Läs poäng från rehab_poang_loader (hanterar alla enheter korrekt)
+        poang_data = load_rehab_poang_och_top_performers(enhet_kst, manad_str)
+
+        poang_actual = poang_data['total_poang']
+        poang_budget = poang_data['budget_poang']
+
+        # Hämta grundbelopp från Intäkt Budget Rehab-fil
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_path = os.path.join(script_dir, 'data')
-
-        # Hämta enhetsnamn-mappen
         folder_name = get_enhet_folder_name(enhet_kst, base_path)
         enhet_path = os.path.join(base_path, folder_name)
 
-        # Konvertera månad till kolumnindex
-        year, month = manad_str.split('-')
-        month_num = int(month)
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June',
-                       'July', 'August', 'September', 'October', 'November', 'December']
-        month_name = month_names[month_num - 1]
-
-        # === BUDGET: Läs från Intäkt Budget Rehab ===
-        budget_val = 0
+        grundbelopp = 523  # Default
         try:
             intakt_files = glob.glob(os.path.join(enhet_path, '*Intäkt Budget Rehab*.xlsx'))
             if intakt_files:
                 df_budget = pd.read_excel(intakt_files[0], header=None)
-                # Rad 5 (0-indexed) = Intäkt konto 3053
-                # Kolumn för månaden
-                if month_name in df_budget.iloc[0].tolist():
-                    col_idx = df_budget.iloc[0].tolist().index(month_name)
-                    budget_val = df_budget.iloc[5, col_idx]
-                    if pd.notna(budget_val):
-                        budget_val = float(budget_val)
-                    else:
-                        budget_val = 0
-        except Exception as e:
-            print(f"Fel vid läsning av Intäkt Budget Rehab för {enhet_kst}: {e}")
-            budget_val = 0
+                if len(df_budget) > 2:
+                    gb = df_budget.iloc[2, 1]  # Rad 2, kolumn 1 (grundbelopp)
+                    if pd.notna(gb):
+                        grundbelopp = float(gb)
+        except Exception:
+            pass  # Använd default grundbelopp
 
-        # === ACTUAL: Beräkna från Poänguppföljning ===
-        actual_val = 0
-        try:
-            # Mapping KST → Sheet-namn (ALLA 16 Rehab-enheter)
-            kst_to_sheet = {
-                # Stor-Göteborg Rehab (8 st)
-                '601': 'Frölunda Torg', '602': 'Grimmered', '603': 'Majorna',
-                '604': 'Pedagogen Park', '605': 'Åby', '607': 'Olskroken',
-                '660': 'Avenyn', '715': 'Karlastaden',
-                # Tätort Rehab (8 st)
-                '703': 'Brålanda-Torpa', '705': 'Noltrop', '706': 'Lilla Edet',
-                '708': 'Stavre', '714': 'Åmål', '713': 'Brålanda Rehab',
-                '650': 'Tanum och Fjällbacka', '670': 'Tanum och Fjällbacka'
-            }
-
-            if enhet_kst in kst_to_sheet:
-                poang_file = os.path.join(script_dir, 'Poänguppföljning Rehab 2026.xlsx')
-                if os.path.exists(poang_file):
-                    df_poang = pd.read_excel(poang_file, sheet_name=kst_to_sheet[enhet_kst], header=None)
-
-                    # Hitta rad 17 (totalt antal poäng)
-                    # Kolumn för månaden: 1=Jan, 2=Feb, 3=Mar, etc
-                    poang_col = month_num
-                    if len(df_poang) > 17 and df_poang.shape[1] > poang_col:
-                        total_poang = df_poang.iloc[17, poang_col]
-                        if pd.notna(total_poang) and total_poang > 0:
-                            # Hämta grundbelopp från Intäkt Budget Rehab (rad 2)
-                            grundbelopp = 523  # Default
-                            if intakt_files:
-                                df_budget = pd.read_excel(intakt_files[0], header=None)
-                                if len(df_budget) > 2:
-                                    gb = df_budget.iloc[2, 1]  # Rad 2, kolumn 1 (January)
-                                    if pd.notna(gb):
-                                        grundbelopp = float(gb)
-
-                            # Beräkna intäkt = poäng × grundbelopp
-                            actual_val = float(total_poang) * grundbelopp
-        except Exception as e:
-            print(f"Fel vid beräkning av actual från Poänguppföljning för {enhet_kst}: {e}")
-            actual_val = 0
+        # Beräkna intäkt i SEK = poäng × grundbelopp
+        actual_val = poang_actual * grundbelopp
+        budget_val = poang_budget * grundbelopp
 
         return {
             'actual': actual_val,
@@ -413,8 +369,8 @@ def get_current_data(enhet_kst, manad):
     if 'intakter_3053' not in base_data:
         base_data['intakter_3053'] = {'actual': 0, 'budget': 0}
 
-    # För Rehab-enheter: Läs intäkter från P&L (alla 14 Rehab-enheter)
-    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '703', '705', '706', '708', '713', '714', '715']:
+    # För Rehab-enheter: Läs intäkter från P&L (alla 16 Rehab-enheter)
+    if enhet_kst in ['601', '602', '603', '604', '605', '607', '660', '703', '705', '706', '708', '713', '714', '715', '650', '670']:
         # Hämta intäkter från P&L
         intakter = load_rehab_intakter_from_pl(enhet_kst, manad)
         base_data['intakter_totalt'] = intakter
@@ -430,35 +386,44 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_poang_actual'] = real_data.get('rehab_poang_actual', 0)
         base_data['teambesok'] = real_data.get('teambesok_actual', 0)  # Används som 'teambesok' i resten av koden
 
-        # Budget och top performers från Poänguppföljning (Stor-Göteborg)
-        try:
-            rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
-            budget_poang = rehab_data['budget_poang']
-            base_data['top_performers'] = rehab_data['top_performers']
+        # Budget och top performers från Poänguppföljning
+        # VIKTIGT: Icke-primära kombinerade enheter (650, 703) får budget=0 för att undvika dubbelräkning
+        NON_PRIMARY_KST = ['650', '703']
 
-            # Om budget är 0, försök läsa från Intäkt Budget Rehab (Tätort)
-            if budget_poang == 0:
-                from data_loader_functions import load_rehab_poang_budget
-                rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
-                maaltal = rehab_budget_data.get('maaltal', 0)
-                antal = rehab_budget_data.get('antal_anstallda', 0)
-                base_data['rehab_poang_budget'] = maaltal * antal
-            else:
-                base_data['rehab_poang_budget'] = budget_poang
-
-        except Exception as e:
-            # Fallback: Försök läsa från Intäkt Budget Rehab
+        if enhet_kst in NON_PRIMARY_KST:
+            # Icke-primär enhet: 0 budget för att undvika dubbelräkning
+            base_data['rehab_poang_budget'] = 0
+            base_data['top_performers'] = []
+        else:
+            # Primär eller fristående enhet
             try:
-                from data_loader_functions import load_rehab_poang_budget
-                rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
-                maaltal = rehab_budget_data.get('maaltal', 0)
-                antal = rehab_budget_data.get('antal_anstallda', 0)
-                base_data['rehab_poang_budget'] = maaltal * antal
-                base_data['top_performers'] = []
-            except Exception as fallback_error:
-                print(f"Fel vid läsning av Rehab budget för {enhet_kst}, {manad}: {fallback_error}")
-                base_data['rehab_poang_budget'] = 0
-                base_data['top_performers'] = []
+                rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
+                budget_poang = rehab_data['budget_poang']
+                base_data['top_performers'] = rehab_data['top_performers']
+
+                # Om budget är 0, försök läsa från Intäkt Budget Rehab (Tätort)
+                if budget_poang == 0:
+                    from data_loader_functions import load_rehab_poang_budget
+                    rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
+                    maaltal = rehab_budget_data.get('maaltal', 0)
+                    antal = rehab_budget_data.get('antal_anstallda', 0)
+                    base_data['rehab_poang_budget'] = maaltal * antal
+                else:
+                    base_data['rehab_poang_budget'] = budget_poang
+
+            except Exception as e:
+                # Fallback: Försök läsa från Intäkt Budget Rehab
+                try:
+                    from data_loader_functions import load_rehab_poang_budget
+                    rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
+                    maaltal = rehab_budget_data.get('maaltal', 0)
+                    antal = rehab_budget_data.get('antal_anstallda', 0)
+                    base_data['rehab_poang_budget'] = maaltal * antal
+                    base_data['top_performers'] = []
+                except Exception as fallback_error:
+                    print(f"Fel vid läsning av Rehab budget för {enhet_kst}, {manad}: {fallback_error}")
+                    base_data['rehab_poang_budget'] = 0
+                    base_data['top_performers'] = []
 
     # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
     else:

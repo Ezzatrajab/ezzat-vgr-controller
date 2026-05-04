@@ -18,11 +18,20 @@ KST_TO_SHEET = {
     '715': 'Karlastaden',
 }
 
-# Tätort Rehab-enheter (SAKNAS i Poänguppföljning - beräknas från P&L)
-TATORT_REHAB_KST = ['703', '705', '706', '708', '714', '650-670', '713']
+# Tätort Rehab-enheter finns NU i Poänguppföljning! (vissa kombinerade)
+# För att undvika dubbelräkning: ENDAST primära KST läses från Poänguppföljning
 
-# Mapping KST → Enhetens namn i översiktsfliken
+# PRIMÄR KST för kombinerade enheter (används för att läsa från Poänguppföljning)
+PRIMARY_KST_FOR_COMBINED = {
+    '670': '670',  # Tanum och Fjällbacka: 670 är primär
+    '650': '670',  # Fjällbacka → använd Tanum (670) som primär
+    '713': '713',  # Brålanda-Torpa: 713 är primär
+    '703': '713',  # Torpa → använd Brålanda (713) som primär
+}
+
+# Mapping KST → Enhetens namn i översiktsfliken "Enheterna AO VGR"
 KST_TO_ENHETSNAMN = {
+    # Stor-Göteborg Rehab
     '601': 'Frölunda Torget',
     '602': 'Grimmered',
     '603': 'Majorna',
@@ -31,6 +40,13 @@ KST_TO_ENHETSNAMN = {
     '607': 'Olskroken',
     '660': 'Avenyn',
     '715': 'Karlastaden',
+    # Tätort Rehab (vissa kombinerade i Poänguppföljning)
+    '670': 'Tanum och Fjällbacka',  # PRIMÄR för 670+650
+    '713': 'Brålanda-Torpa',        # PRIMÄR för 713+703
+    '705': 'Noltorp',
+    '706': 'Lilla Edet',
+    '708': 'Stavre',
+    '714': 'Åmål',
 }
 
 # Mapping månad → kolumnindex
@@ -75,7 +91,7 @@ def load_rehab_poang_from_pl(enhet_kst, manad_str, base_path=None):
         # === Läs P&L Actual för att få intäkt 3053 ===
         pl_actual_path = os.path.join(base_path, enhet_kst, 'P&L Actual.xlsx')
         if not os.path.exists(pl_actual_path):
-            print(f"⚠️ P&L Actual saknas för {enhet_kst}")
+            print(f"[!] P&L Actual saknas for {enhet_kst}")
             return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
 
         df_pl = pd.read_excel(pl_actual_path, header=None)
@@ -97,7 +113,7 @@ def load_rehab_poang_from_pl(enhet_kst, manad_str, base_path=None):
                     continue
 
         if col_idx is None:
-            print(f"⚠️ Månad {manad_str} hittades inte i P&L Actual för {enhet_kst}")
+            print(f"[!] Manad {manad_str} hittades inte i P&L Actual for {enhet_kst}")
             return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
 
         # Hitta rad 8: "3053 RG Prestationsersättning Rehab"
@@ -156,6 +172,85 @@ def load_rehab_poang_from_pl(enhet_kst, manad_str, base_path=None):
 
     except Exception as e:
         print(f"Fel vid beräkning av Rehab-poäng från P&L för {enhet_kst}: {e}")
+        return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+
+def load_rehab_from_enheterna_ao_vgr(enhet_kst, manad_str, base_path=None):
+    """
+    Läser Rehab ACTUAL och BUDGET från fliken "Enheterna AO VGR"
+    Fungerar för ALLA Rehab-enheter (Stor-Göteborg + Tätort)
+
+    Args:
+        enhet_kst: '601', '602', '650', '670', '703', '705', etc
+        manad_str: '2026-01', '2026-02', etc
+        base_path: Bas-sökväg
+
+    Returns:
+        dict: {
+            'total_poang': float (Actual),
+            'budget_poang': float (Budget),
+            'top_performers': [] (tom - ingen individdata i översikten)
+        }
+    """
+    try:
+        # Använd primär KST för kombinerade enheter (undvik dubbelräkning)
+        lookup_kst = PRIMARY_KST_FOR_COMBINED.get(enhet_kst, enhet_kst)
+
+        # Hitta filen
+        if base_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, 'data', 'Poänguppföljning Rehab 2026.xlsx')
+            if not os.path.exists(file_path):
+                parent_dir = os.path.dirname(script_dir)
+                file_path = os.path.join(parent_dir, 'Poänguppföljning Rehab 2026.xlsx')
+        else:
+            file_path = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
+
+        if not os.path.exists(file_path):
+            return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+        # Hämta enhetsnamn och kolumnindex (använd lookup_kst)
+        enhetsnamn = KST_TO_ENHETSNAMN.get(lookup_kst)
+        if not enhetsnamn:
+            return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+        col_idx = MANAD_TO_COL.get(manad_str)
+        if col_idx is None:
+            return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+        # Läs översiktsfliken
+        df = pd.read_excel(file_path, sheet_name='Enheterna AO VGR', header=None)
+
+        # Hitta raden med enhetsnamnet
+        for idx in range(len(df)):
+            cell_value = df.iloc[idx, 0]
+            if pd.notna(cell_value) and isinstance(cell_value, str):
+                if enhetsnamn.lower() in cell_value.lower():
+                    # Nästa rad = "Poäng ACTUAL" (idx+1)
+                    # Rad efter det = "Poäng Budget" (idx+2)
+                    actual_value = 0
+                    budget_value = 0
+
+                    if idx + 1 < len(df):
+                        actual_val = df.iloc[idx + 1, col_idx]
+                        if pd.notna(actual_val) and isinstance(actual_val, (int, float)):
+                            actual_value = float(actual_val)
+
+                    if idx + 2 < len(df):
+                        budget_val = df.iloc[idx + 2, col_idx]
+                        if pd.notna(budget_val) and isinstance(budget_val, (int, float)):
+                            budget_value = float(budget_val)
+
+                    return {
+                        'total_poang': actual_value,
+                        'budget_poang': budget_value,
+                        'top_performers': []  # Ingen individdata i översiktsfliken
+                    }
+
+        return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
+
+    except Exception as e:
+        print(f"Fel vid läsning från Enheterna AO VGR för {enhet_kst}, {manad_str}: {e}")
         return {'total_poang': 0, 'budget_poang': 0, 'top_performers': []}
 
 
@@ -219,10 +314,10 @@ def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
 def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
     """
     Läser Rehab-poäng och top performers från Poänguppföljning Rehab 2026.xlsx
-    För Tätort-enheter: Beräknar poäng från P&L Actual
+    ALLA enheter läses från Poänguppföljning (inklusive Tätort)
 
     Args:
-        enhet_kst: '601', '602', etc
+        enhet_kst: '601', '602', '650', '670', '703', '705', '706', '708', '713', '714', etc
         manad_str: '2026-01', '2026-02', etc
         base_path: Bas-sökväg (default: ../Poänguppföljning Rehab 2026.xlsx)
 
@@ -234,77 +329,70 @@ def load_rehab_poang_och_top_performers(enhet_kst, manad_str, base_path=None):
         }
     """
     try:
-        # === TÄTORT REHAB-ENHETER: Beräkna från P&L ===
-        if enhet_kst in TATORT_REHAB_KST:
-            return load_rehab_poang_from_pl(enhet_kst, manad_str, base_path)
+        # === STEG 1: Läs ACTUAL och BUDGET från "Enheterna AO VGR" ===
+        result = load_rehab_from_enheterna_ao_vgr(enhet_kst, manad_str, base_path)
 
-        # === STOR-GÖTEBORG: Läs från Poänguppföljning ===
-        # Läs budget först
-        budget_poang = load_rehab_budget_poang(enhet_kst, manad_str, base_path)
-        # Hitta filen
-        if base_path is None:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            # Kolla först om filen finns i data/
-            file_path = os.path.join(script_dir, 'data', 'Poänguppföljning Rehab 2026.xlsx')
-            if not os.path.exists(file_path):
-                # Kolla i parent-mappen
-                parent_dir = os.path.dirname(script_dir)
-                file_path = os.path.join(parent_dir, 'Poänguppföljning Rehab 2026.xlsx')
-        else:
-            file_path = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
+        # === STEG 2: För Stor-Göteborg enheter, läs även top_performers från individuella sheets ===
+        if enhet_kst in KST_TO_SHEET:
+            # Hitta filen
+            if base_path is None:
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                file_path = os.path.join(script_dir, 'data', 'Poänguppföljning Rehab 2026.xlsx')
+                if not os.path.exists(file_path):
+                    parent_dir = os.path.dirname(script_dir)
+                    file_path = os.path.join(parent_dir, 'Poänguppföljning Rehab 2026.xlsx')
+            else:
+                file_path = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
 
-        if not os.path.exists(file_path):
-            print(f"⚠️ Poänguppföljning-fil hittades inte på: {file_path}")
-            return {'total_poang': 0, 'top_performers': []}
+            if os.path.exists(file_path):
+                sheet_name = KST_TO_SHEET.get(enhet_kst)
+                col_idx = MANAD_TO_COL.get(manad_str)
 
-        # Hämta sheet-namn och kolumnindex
-        sheet_name = KST_TO_SHEET.get(enhet_kst)
-        if not sheet_name:
-            return {'total_poang': 0, 'top_performers': []}
+                if sheet_name and col_idx is not None:
+                    try:
+                        # Läs individuellt sheet för top_performers
+                        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
 
-        col_idx = MANAD_TO_COL.get(manad_str)
-        if col_idx is None:
-            return {'total_poang': 0, 'top_performers': []}
+                        top_performers = []
+                        individual_total = 0
 
-        # Läs Excel-fil
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+                        # Läs rad 3 till 30 (personer)
+                        for idx in range(3, min(30, len(df))):
+                            namn = df.iloc[idx, 0]
 
-        # Rad 2 = "Actual" header
-        # Rad 3+ = Personer med poäng
+                            # Stoppa om vi når en tom rad
+                            if pd.isna(namn) or namn == '' or not isinstance(namn, str):
+                                break
 
-        total_poang = 0
-        top_performers = []
+                            # Läs poäng för vald månad
+                            poang = df.iloc[idx, col_idx]
 
-        # Läs rad 3 till 30 (personer)
-        for idx in range(3, min(30, len(df))):
-            namn = df.iloc[idx, 0]
+                            if pd.notna(poang) and isinstance(poang, (int, float)):
+                                poang = float(poang)
+                                individual_total += poang
 
-            # Stoppa om vi når en tom rad eller "NaN"
-            if pd.isna(namn) or namn == '' or not isinstance(namn, str):
-                break
+                                # Lägg till i top_performers om över 200
+                                if poang >= 200:
+                                    top_performers.append({
+                                        'namn': namn.strip(),
+                                        'poang': poang
+                                    })
 
-            # Läs poäng för vald månad
-            poang = df.iloc[idx, col_idx]
+                        # Sortera top_performers efter poäng (högst först)
+                        top_performers.sort(key=lambda x: x['poang'], reverse=True)
 
-            if pd.notna(poang) and isinstance(poang, (int, float)):
-                poang = float(poang)
-                total_poang += poang
+                        # Uppdatera result med individdata
+                        result['top_performers'] = top_performers
 
-                # Lägg till i top_performers om över 200
-                if poang >= 200:
-                    top_performers.append({
-                        'namn': namn.strip(),
-                        'poang': poang
-                    })
+                        # Om individuell summa finns och skiljer sig, använd den istället
+                        if individual_total > 0:
+                            result['total_poang'] = individual_total
 
-        # Sortera top_performers efter poäng (högst först)
-        top_performers.sort(key=lambda x: x['poang'], reverse=True)
+                    except Exception as e:
+                        # Om vi inte kan läsa individuellt sheet, använd data från översikt
+                        pass
 
-        return {
-            'total_poang': total_poang,
-            'budget_poang': budget_poang,
-            'top_performers': top_performers
-        }
+        return result
 
     except Exception as e:
         print(f"Fel vid läsning av Rehab-poäng för {enhet_kst}, {manad_str}: {e}")
