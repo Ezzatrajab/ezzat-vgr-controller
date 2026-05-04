@@ -430,15 +430,35 @@ def get_current_data(enhet_kst, manad):
         base_data['rehab_poang_actual'] = real_data.get('rehab_poang_actual', 0)
         base_data['teambesok'] = real_data.get('teambesok_actual', 0)  # Används som 'teambesok' i resten av koden
 
-        # Budget och top performers från Poänguppföljning (bara Stor-Göteborg)
+        # Budget och top performers från Poänguppföljning (Stor-Göteborg)
         try:
             rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad)
-            base_data['rehab_poang_budget'] = rehab_data['budget_poang']
+            budget_poang = rehab_data['budget_poang']
             base_data['top_performers'] = rehab_data['top_performers']
+
+            # Om budget är 0, försök läsa från Intäkt Budget Rehab (Tätort)
+            if budget_poang == 0:
+                from data_loader_functions import load_rehab_poang_budget
+                rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
+                maaltal = rehab_budget_data.get('maaltal', 0)
+                antal = rehab_budget_data.get('antal_anstallda', 0)
+                base_data['rehab_poang_budget'] = maaltal * antal
+            else:
+                base_data['rehab_poang_budget'] = budget_poang
+
         except Exception as e:
-            # För Tätort-enheter saknas budget/top performers - OK
-            base_data['rehab_poang_budget'] = 0
-            base_data['top_performers'] = []
+            # Fallback: Försök läsa från Intäkt Budget Rehab
+            try:
+                from data_loader_functions import load_rehab_poang_budget
+                rehab_budget_data = load_rehab_poang_budget(enhet_kst, manad)  # base_path=None använder default
+                maaltal = rehab_budget_data.get('maaltal', 0)
+                antal = rehab_budget_data.get('antal_anstallda', 0)
+                base_data['rehab_poang_budget'] = maaltal * antal
+                base_data['top_performers'] = []
+            except Exception as fallback_error:
+                print(f"Fel vid läsning av Rehab budget för {enhet_kst}, {manad}: {fallback_error}")
+                base_data['rehab_poang_budget'] = 0
+                base_data['top_performers'] = []
 
     # För VC-enheter: Lägg till Rehab-poäng från KPI (om VC har kopplad Rehab)
     else:
@@ -517,9 +537,8 @@ def get_traffic_light(avvikelse_pct, is_cost=False):
         - Ökning (positivt): 🔴 Röd
 
     is_cost=False: För intäkter/produktion (Listning, Rehab Poäng)
-        - Inom ±5%: 🟢 Grön
-        - Inom ±10%: 🟡 Gul
-        - Över ±10%: 🔴 Röd
+        - Över budget (positivt): 🟢 Grön
+        - Under budget (negativt): 🔴 Röd
     """
     if is_cost:
         # För kostnader: Ökning = dåligt (röd), Minskning = bra (grön)
@@ -528,13 +547,11 @@ def get_traffic_light(avvikelse_pct, is_cost=False):
         else:
             return "🔴", "red-box"  # På eller över budget
     else:
-        # För intäkter/produktion: Symmetrisk tolerans
-        if abs(avvikelse_pct) <= 5:
-            return "🟢", "green-box"
-        elif abs(avvikelse_pct) <= 10:
-            return "🟡", "yellow-box"
+        # För intäkter/produktion: Ökning = bra (grön), Minskning = dåligt (röd)
+        if avvikelse_pct >= 0:
+            return "🟢", "green-box"  # På eller över budget
         else:
-            return "🔴", "red-box"
+            return "🔴", "red-box"  # Under budget
 
 def analyze_personal_avvikelser(enhet_kst, vald_manad):
     """Analysera totala personalkostnader och FTE-avvikelser"""
