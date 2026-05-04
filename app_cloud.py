@@ -98,8 +98,15 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
     """
     try:
         import os
+        import glob
+        from info_loader import get_enhet_folder_name
+
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_path = os.path.join(script_dir, 'data')
+
+        # Hämta enhetsnamn-mappen
+        folder_name = get_enhet_folder_name(enhet_kst, base_path)
+        enhet_path = os.path.join(base_path, folder_name)
 
         # Konvertera månad till kolumnindex
         year, month = manad_str.split('-')
@@ -111,10 +118,9 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         # === BUDGET: Läs från Intäkt Budget Rehab ===
         budget_val = 0
         try:
-            intakt_files = [f for f in os.listdir(os.path.join(base_path, enhet_kst))
-                           if 'Intäkt Budget Rehab' in f and f.endswith('.xlsx')]
+            intakt_files = glob.glob(os.path.join(enhet_path, '*Intäkt Budget Rehab*.xlsx'))
             if intakt_files:
-                df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, intakt_files[0]), header=None)
+                df_budget = pd.read_excel(intakt_files[0], header=None)
                 # Rad 5 (0-indexed) = Intäkt konto 3053
                 # Kolumn för månaden
                 if month_name in df_budget.iloc[0].tolist():
@@ -131,16 +137,20 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
         # === ACTUAL: Beräkna från Poänguppföljning ===
         actual_val = 0
         try:
-            # Mapping KST → Sheet-namn
+            # Mapping KST → Sheet-namn (ALLA 16 Rehab-enheter)
             kst_to_sheet = {
+                # Stor-Göteborg Rehab (8 st)
                 '601': 'Frölunda Torg', '602': 'Grimmered', '603': 'Majorna',
                 '604': 'Pedagogen Park', '605': 'Åby', '607': 'Olskroken',
                 '660': 'Avenyn', '715': 'Karlastaden',
-                '713': 'Kviberg', '714': 'Olskroken',  # Ej bekräftad mapping
+                # Tätort Rehab (8 st)
+                '703': 'Brålanda-Torpa', '705': 'Noltrop', '706': 'Lilla Edet',
+                '708': 'Stavre', '714': 'Åmål', '713': 'Brålanda Rehab',
+                '650': 'Tanum och Fjällbacka', '670': 'Tanum och Fjällbacka'
             }
 
             if enhet_kst in kst_to_sheet:
-                poang_file = os.path.join(base_path, 'Poänguppföljning Rehab 2026.xlsx')
+                poang_file = os.path.join(script_dir, 'Poänguppföljning Rehab 2026.xlsx')
                 if os.path.exists(poang_file):
                     df_poang = pd.read_excel(poang_file, sheet_name=kst_to_sheet[enhet_kst], header=None)
 
@@ -153,7 +163,7 @@ def load_rehab_intakter_from_pl(enhet_kst, manad_str):
                             # Hämta grundbelopp från Intäkt Budget Rehab (rad 2)
                             grundbelopp = 523  # Default
                             if intakt_files:
-                                df_budget = pd.read_excel(os.path.join(base_path, enhet_kst, intakt_files[0]), header=None)
+                                df_budget = pd.read_excel(intakt_files[0], header=None)
                                 if len(df_budget) > 2:
                                     gb = df_budget.iloc[2, 1]  # Rad 2, kolumn 1 (January)
                                     if pd.notna(gb):
