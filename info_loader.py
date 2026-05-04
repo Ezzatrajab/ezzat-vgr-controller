@@ -27,7 +27,8 @@ def load_org_mappings(base_path=None) -> Dict[str, Dict[str, str]]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = script_dir  # INFO.xlsx in same folder  # En nivå upp från Dashboard
+        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
+        base_path = os.path.dirname(script_dir)
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -71,13 +72,31 @@ def get_enhet_folder_name(kst: str, base_path=None) -> str:
 
     Returns:
         str: Mappnamn t.ex. 'Frölunda Torg', 'Frölunda Torg Rehab'
+
+    SPECIALFALL - Kombinerade enheter:
+    - 108 (Åby) + 109 (Kållered) → 'Åby-Kållered'
+    - 302 (Avenyn) + 303 (Lorensberg) → 'Avenyn-Lorensberg'
+    - 650 (Fjällbacka Rehab) + 670 (Tanum Rehab) → 'Tanum- Fjällbacka Rehab'
     """
+    # SPECIALFALL: Kombinerade enheter (har gemensam data-mapp)
+    KOMBINERADE_ENHETER = {
+        '108': 'Åby-Kållered',
+        '109': 'Åby-Kållered',
+        '302': 'Avenyn-Lorensberg',
+        '303': 'Avenyn-Lorensberg',
+        '650': 'Tanum- Fjällbacka Rehab',  # Notera mellanslaget (behåller befintligt mappnamn)
+        '670': 'Tanum- Fjällbacka Rehab',
+    }
+
+    if kst in KOMBINERADE_ENHETER:
+        return KOMBINERADE_ENHETER[kst]
+
     # För enhetsmappar, använd alltid VGR Alla enheter-mappen (en nivå upp från Dashboard)
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_path = os.path.join(script_dir, 'data')  # Dashboard/data
 
-    mappings = load_org_mappings(None)  # INFO.xlsx finns i Dashboard
+    mappings = load_org_mappings(None)  # INFO.xlsx finns i VGR Alla enheter
     full_name = mappings['kst_to_full_name'].get(kst, '')
 
     # Skapa mappnamn baserat på fullständigt namn
@@ -111,7 +130,8 @@ def load_acg_casemix_from_info(enhet_namn: str, manad_str: str, base_path=None) 
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = script_dir  # INFO.xlsx in same folder
+        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
+        base_path = os.path.dirname(script_dir)
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -203,7 +223,8 @@ def load_kpi_from_info(kpi_name: str, enhet_namn: str, manad_str: str, base_path
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = script_dir  # INFO.xlsx in same folder
+        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
+        base_path = os.path.dirname(script_dir)
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 
@@ -398,7 +419,8 @@ def build_enheter_data(base_path=None) -> Dict[str, Dict]:
     """
     if base_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_path = script_dir  # INFO.xlsx in same folder
+        # MASTER-FIL: VGR Alla enheter/INFO.xlsx (en nivå upp från Dashboard)
+        base_path = os.path.dirname(script_dir)
 
     info_path = os.path.join(base_path, 'INFO.xlsx')
 

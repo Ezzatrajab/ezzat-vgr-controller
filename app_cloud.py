@@ -1,19 +1,21 @@
 """
-Ezzat's Controlling System - Cloud Version v5.8
+Ezzat's Controlling System - Cloud Version v6.0
 Controller: Ezzat Rajab
-Uppdaterad: 2026-04-14
-Multi-enhet support: Alla 34 enheter (20 Stor-Göteborg + 14 Tätort)
-DATAKÄLLA: P&L Actual/Budget + KPIer Stor-GBG.xlsx + Poänguppföljning Rehab
+Uppdaterad: 2026-05-04
+Multi-enhet support: Alla 37 enheter (23 Stor-Göteborg + 14 Tätort)
+DATAKÄLLA: INFO.xlsx (dynamisk) + P&L Actual/Budget + Poänguppföljning Rehab
 
-UPPDATERING v5.8 - KOMPLETT FIX TÄTORT REHAB:
-- ✅ KLART: Rehab Poäng och TeamBesök för ALLA 15 Rehab-enheter från KPIer-filen
-- ✅ Åmål (714): 1,251 poäng + 38 TeamBesök (Mars 2026) - FUNGERAR!
-- ✅ Alla Tätort Rehab-enheter: Torpa, Noltorp, Lilla Edet, Stavre, Brålanda, Fjällbacka-Tanum
-- ✅ Uppdaterad KPIer Stor-GBG.xlsx med ny struktur (rad 298-313, 317-332)
+UPPDATERING v6.0 - KOMPLETT VALIDERING ALLA 37 ENHETER:
+- ✅ DYNAMISK LADDNING: Alla enheter laddas från INFO.xlsx Org-flik
+- ✅ KOMBINERADE ENHETER: Åby-Kållered (108+109), Avenyn-Lorensberg (302+303), Tanum-Fjällbacka Rehab (650+670)
+- ✅ FULLSTÄNDIG TÄCKNING: 15 VC Stor-Göteborg, 8 Rehab Stor-Göteborg, 6 VC Tätort, 8 Rehab Tätort
+- ✅ DATA-VALIDERING: Alla 37 enheter har verifierade data-mappar
+- ✅ KPI-INTEGRERING: Listning, ACG, Rehab Poäng, TeamBesök från INFO.xlsx
 
-TIDIGARE UPPDATERINGAR:
-v5.7 - P&L-beräkning för Tätort Rehab Poäng (ersatt med KPIer-fil i v5.8)
-v5.6 - TeamBesök smart fallback + Rehab-intäkter från rätt källa
+TIDIGARE VERSIONER:
+v5.8 - Rehab Poäng och TeamBesök för alla 15 Rehab-enheter
+v5.7 - P&L-beräkning för Tätort Rehab
+v5.6 - TeamBesök smart fallback
 """
 
 import streamlit as st
