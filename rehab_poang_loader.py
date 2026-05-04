@@ -161,7 +161,7 @@ def load_rehab_poang_from_pl(enhet_kst, manad_str, base_path=None):
 
 def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
     """
-    Läser budgeterade Rehab-poäng från fliken "Enheterna AO Stor-GBG"
+    Läser budgeterade Rehab-poäng från fliken "Enheterna AO VGR"
 
     Args:
         enhet_kst: '601', '602', etc
@@ -195,7 +195,7 @@ def load_rehab_budget_poang(enhet_kst, manad_str, base_path=None):
             return 0
 
         # Läs översiktsfliken
-        df = pd.read_excel(file_path, sheet_name='Enheterna AO Stor-GBG', header=None)
+        df = pd.read_excel(file_path, sheet_name='Enheterna AO VGR', header=None)
 
         # Hitta raden med enhetsnamnet
         for idx in range(len(df)):
