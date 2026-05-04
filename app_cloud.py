@@ -985,167 +985,167 @@ def main():
             st.header(f"📊 {enhet_info['enhet_namn']} (KST: {vald_enhet_kst})")
             st.markdown(f"**VEC:** {enhet_info['vec']} | **Region:** {enhet_info['region']} | **Typ:** {enhet_info['typ']} | **Period:** {vald_manad_namn}")
 
-        tab1, tab2 = st.tabs(["💰 Personal", "📈 Trender"])
+            tab1, tab2 = st.tabs(["💰 Personal", "📈 Trender"])
 
-        with tab1:
-            st.markdown(f"### 💰 Personal & Kostnader - {vald_manad_namn}")
+            with tab1:
+                st.markdown(f"### 💰 Personal & Kostnader - {vald_manad_namn}")
 
-            # FTE och Personalkostnad översikt
-            col1, col2 = st.columns(2)
+                # FTE och Personalkostnad översikt
+                col1, col2 = st.columns(2)
 
-            with col1:
-                st.markdown("#### 👥 FTE (Full-Time Equivalent)")
-                fte_actual = current_data['fte']['actual']
-                fte_budget = current_data['fte']['budget']
-                fte_avv = fte_actual - fte_budget
-                fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
+                with col1:
+                    st.markdown("#### 👥 FTE (Full-Time Equivalent)")
+                    fte_actual = current_data['fte']['actual']
+                    fte_budget = current_data['fte']['budget']
+                    fte_avv = fte_actual - fte_budget
+                    fte_avv_pct = (fte_avv / fte_budget * 100) if fte_budget > 0 else 0
 
-                st.metric("FTE Actual", f"{fte_actual:.1f}", f"{fte_avv:+.1f} ({fte_avv_pct:+.1f}%)")
-                st.markdown(f"**Budget:** {fte_budget:.1f}")
+                    st.metric("FTE Actual", f"{fte_actual:.1f}", f"{fte_avv:+.1f} ({fte_avv_pct:+.1f}%)")
+                    st.markdown(f"**Budget:** {fte_budget:.1f}")
 
-            with col2:
-                st.markdown("#### 💰 Personalkostnad")
-                pk_actual = current_data['personalkostnad']['actual']
-                pk_budget = current_data['personalkostnad']['budget']
-                pk_avv = pk_actual - pk_budget
-                pk_avv_pct = (pk_avv / pk_budget * 100) if pk_budget > 0 else 0
+                with col2:
+                    st.markdown("#### 💰 Personalkostnad")
+                    pk_actual = current_data['personalkostnad']['actual']
+                    pk_budget = current_data['personalkostnad']['budget']
+                    pk_avv = pk_actual - pk_budget
+                    pk_avv_pct = (pk_avv / pk_budget * 100) if pk_budget > 0 else 0
 
-                st.metric("Kostnad Actual", f"{pk_actual:,.0f} kr", f"{pk_avv:+,.0f} ({pk_avv_pct:+.1f}%)")
-                st.markdown(f"**Budget:** {pk_budget:,.0f} kr")
+                    st.metric("Kostnad Actual", f"{pk_actual:,.0f} kr", f"{pk_avv:+,.0f} ({pk_avv_pct:+.1f}%)")
+                    st.markdown(f"**Budget:** {pk_budget:,.0f} kr")
 
-            st.markdown("---")
+                st.markdown("---")
 
-            # Sammanfattning tabell
-            st.markdown("#### 📊 Översikt")
-            df_oversikt = pd.DataFrame([{
-                'Kategori': 'FTE',
-                'Actual': f"{fte_actual:.1f}",
-                'Budget': f"{fte_budget:.1f}",
-                'Avvikelse': f"{fte_avv:+.1f}",
-                'Avv %': f"{fte_avv_pct:+.1f}%"
-            }, {
-                'Kategori': 'Personalkostnad',
-                'Actual': f"{pk_actual:,.0f}",
-                'Budget': f"{pk_budget:,.0f}",
-                'Avvikelse': f"{pk_avv:+,.0f}",
-                'Avv %': f"{pk_avv_pct:+.1f}%"
-            }])
-            st.dataframe(df_oversikt, use_container_width=True, hide_index=True)
+                # Sammanfattning tabell
+                st.markdown("#### 📊 Översikt")
+                df_oversikt = pd.DataFrame([{
+                    'Kategori': 'FTE',
+                    'Actual': f"{fte_actual:.1f}",
+                    'Budget': f"{fte_budget:.1f}",
+                    'Avvikelse': f"{fte_avv:+.1f}",
+                    'Avv %': f"{fte_avv_pct:+.1f}%"
+                }, {
+                    'Kategori': 'Personalkostnad',
+                    'Actual': f"{pk_actual:,.0f}",
+                    'Budget': f"{pk_budget:,.0f}",
+                    'Avvikelse': f"{pk_avv:+,.0f}",
+                    'Avv %': f"{pk_avv_pct:+.1f}%"
+                }])
+                st.dataframe(df_oversikt, use_container_width=True, hide_index=True)
 
-            # Detaljerad analys
-            st.markdown("---")
-            st.markdown("### 🔍 Detaljerad Avvikelseanalys")
+                # Detaljerad analys
+                st.markdown("---")
+                st.markdown("### 🔍 Detaljerad Avvikelseanalys")
 
-            analyser = analyze_personal_avvikelser(vald_enhet_kst, vald_manad)
+                analyser = analyze_personal_avvikelser(vald_enhet_kst, vald_manad)
 
-            if analyser:
-                for analys in analyser:
-                    with st.expander(f"{analys['status']} - {analys['kategori']} ({analys['kostnad_avv_pct']:+.1f}%)"):
-                        st.markdown(analys['förklaring'])
-            else:
-                st.success("✅ Alla personalkategorier inom acceptabelt intervall")
+                if analyser:
+                    for analys in analyser:
+                        with st.expander(f"{analys['status']} - {analys['kategori']} ({analys['kostnad_avv_pct']:+.1f}%)"):
+                            st.markdown(analys['förklaring'])
+                else:
+                    st.success("✅ Alla personalkategorier inom acceptabelt intervall")
 
-        with tab2:
-            st.markdown("### 📈 Trender Q1 2026")
+            with tab2:
+                st.markdown("### 📈 Trender Q1 2026")
 
-            # Skapa trend-data för denna enhet
-            months = ['Jan', 'Feb', 'Mar']
-            month_keys = ['2026-01', '2026-02', '2026-03']
+                # Skapa trend-data för denna enhet
+                months = ['Jan', 'Feb', 'Mar']
+                month_keys = ['2026-01', '2026-02', '2026-03']
 
-            # Ladda data för alla tre månader
-            try:
-                month_data = []
-                for m in month_keys:
-                    data = get_current_data(vald_enhet_kst, m)
-                    month_data.append(data)
+                # Ladda data för alla tre månader
+                try:
+                    month_data = []
+                    for m in month_keys:
+                        data = get_current_data(vald_enhet_kst, m)
+                        month_data.append(data)
 
-                # FTE Trend
-                fte_actual = [data['fte']['actual'] for data in month_data]
-                fte_budget = [data['fte']['budget'] for data in month_data]
+                    # FTE Trend
+                    fte_actual = [data['fte']['actual'] for data in month_data]
+                    fte_budget = [data['fte']['budget'] for data in month_data]
 
-                fig = go.Figure()
-                fig.add_trace(go.Bar(x=months, y=fte_actual,
-                                   name='Actual FTE', marker_color='#FF6B6B'))
-                fig.add_trace(go.Scatter(x=months, y=fte_budget,
-                                       name='Budget FTE', mode='lines+markers',
-                                       line=dict(color='#4ECDC4', width=3)))
-                fig.update_layout(title=f'FTE Trend - {enhet_info["enhet_namn"]}', height=350)
-                st.plotly_chart(fig, use_container_width=True)
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(x=months, y=fte_actual,
+                                       name='Actual FTE', marker_color='#FF6B6B'))
+                    fig.add_trace(go.Scatter(x=months, y=fte_budget,
+                                           name='Budget FTE', mode='lines+markers',
+                                           line=dict(color='#4ECDC4', width=3)))
+                    fig.update_layout(title=f'FTE Trend - {enhet_info["enhet_namn"]}', height=350)
+                    st.plotly_chart(fig, use_container_width=True)
 
-                # Personalkostnad Trend
-                pk_actual = [data['personalkostnad']['actual'] for data in month_data]
-                pk_budget = [data['personalkostnad']['budget'] for data in month_data]
+                    # Personalkostnad Trend
+                    pk_actual = [data['personalkostnad']['actual'] for data in month_data]
+                    pk_budget = [data['personalkostnad']['budget'] for data in month_data]
 
-                fig = go.Figure()
-                fig.add_trace(go.Bar(x=months, y=pk_actual,
-                                   name='Actual Kostnad', marker_color='#FF6B6B'))
-                fig.add_trace(go.Scatter(x=months, y=pk_budget,
-                                       name='Budget Kostnad', mode='lines+markers',
-                                       line=dict(color='#4ECDC4', width=3)))
-                fig.update_layout(title='Personalkostnad Trend (kr)', height=350)
-                st.plotly_chart(fig, use_container_width=True)
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(x=months, y=pk_actual,
+                                       name='Actual Kostnad', marker_color='#FF6B6B'))
+                    fig.add_trace(go.Scatter(x=months, y=pk_budget,
+                                           name='Budget Kostnad', mode='lines+markers',
+                                           line=dict(color='#4ECDC4', width=3)))
+                    fig.update_layout(title='Personalkostnad Trend (kr)', height=350)
+                    st.plotly_chart(fig, use_container_width=True)
 
-                # Intäkter Trend
-                int_actual = [data['intakter_totalt']['actual'] for data in month_data]
-                int_budget = [data['intakter_totalt']['budget'] for data in month_data]
+                    # Intäkter Trend
+                    int_actual = [data['intakter_totalt']['actual'] for data in month_data]
+                    int_budget = [data['intakter_totalt']['budget'] for data in month_data]
 
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=months, y=int_actual,
-                                       mode='lines+markers', name='Actual',
-                                       line=dict(color='#FF6B6B', width=3),
-                                       marker=dict(size=10)))
-                fig.add_trace(go.Scatter(x=months, y=int_budget,
-                                       mode='lines+markers', name='Budget',
-                                       line=dict(color='#4ECDC4', width=3),
-                                       marker=dict(size=10)))
-                fig.update_layout(title='Intäkter Trend (kr)', height=350)
-                st.plotly_chart(fig, use_container_width=True)
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(x=months, y=int_actual,
+                                           mode='lines+markers', name='Actual',
+                                           line=dict(color='#FF6B6B', width=3),
+                                           marker=dict(size=10)))
+                    fig.add_trace(go.Scatter(x=months, y=int_budget,
+                                           mode='lines+markers', name='Budget',
+                                           line=dict(color='#4ECDC4', width=3),
+                                           marker=dict(size=10)))
+                    fig.update_layout(title='Intäkter Trend (kr)', height=350)
+                    st.plotly_chart(fig, use_container_width=True)
 
-            except Exception as e:
-                st.error(f"❌ Kunde inte ladda trenddata: {e}")
-                st.info("Kontrollera att data finns för alla tre månader (Jan, Feb, Mar)")
+                except Exception as e:
+                    st.error(f"❌ Kunde inte ladda trenddata: {e}")
+                    st.info("Kontrollera att data finns för alla tre månader (Jan, Feb, Mar)")
 
         # === VEC KOMMENTARER ===
         elif page == "💬 VEC Kommentarer":
             st.header(f"💬 VEC Kommentarer - {vald_manad_namn}")
             st.markdown(f"**Enhet:** {enhet_info['enhet_namn']} | **VEC:** {enhet_info['vec']}")
 
-        # Visa befintliga kommentarer för denna enhet
-        st.markdown("---")
-        st.markdown("### 📝 Tidigare Kommentarer")
+            # Visa befintliga kommentarer för denna enhet
+            st.markdown("---")
+            st.markdown("### 📝 Tidigare Kommentarer")
 
-        enhet_comments = [c for c in st.session_state.vec_comments if c['enhet_kst'] == vald_enhet_kst]
+            enhet_comments = [c for c in st.session_state.vec_comments if c['enhet_kst'] == vald_enhet_kst]
 
-        if enhet_comments:
-            for comment in reversed(enhet_comments):
-                with st.expander(f"{comment['datum']} - {comment['författare']} ({comment['månad']})"):
-                    st.markdown(comment['kommentar'])
-        else:
-            st.info(f"Inga kommentarer för {enhet_info['enhet_namn']} ännu")
+            if enhet_comments:
+                for comment in reversed(enhet_comments):
+                    with st.expander(f"{comment['datum']} - {comment['författare']} ({comment['månad']})"):
+                        st.markdown(comment['kommentar'])
+            else:
+                st.info(f"Inga kommentarer för {enhet_info['enhet_namn']} ännu")
 
-        # Lägg till ny kommentar
-        st.markdown("---")
-        st.markdown("### ✍️ Lägg till Kommentar")
+            # Lägg till ny kommentar
+            st.markdown("---")
+            st.markdown("### ✍️ Lägg till Kommentar")
 
-        with st.form("comment_form"):
-            författare = st.text_input("Ditt namn", value=enhet_info['vec'])
-            kommentar = st.text_area("Kommentar", height=150,
-                                    placeholder="Beskriv situationen för denna månad...\n\nT.ex:\n- Status på rekrytering\n- Förklaring till avvikelser\n- Åtgärder som planeras")
-            submitted = st.form_submit_button("💾 Spara Kommentar")
+            with st.form("comment_form"):
+                författare = st.text_input("Ditt namn", value=enhet_info['vec'])
+                kommentar = st.text_area("Kommentar", height=150,
+                                        placeholder="Beskriv situationen för denna månad...\n\nT.ex:\n- Status på rekrytering\n- Förklaring till avvikelser\n- Åtgärder som planeras")
+                submitted = st.form_submit_button("💾 Spara Kommentar")
 
-            if submitted and kommentar:
-                # Spara kommentar i session state
-                ny_kommentar = {
-                    'datum': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    'författare': författare,
-                    'månad': vald_manad_namn,
-                    'kommentar': kommentar,
-                    'enhet': enhet_info['enhet_namn'],
-                    'enhet_kst': vald_enhet_kst
-                }
-                st.session_state.vec_comments.append(ny_kommentar)
-                st.success(f"✅ Kommentar sparad för {enhet_info['enhet_namn']}!")
-                st.rerun()
+                if submitted and kommentar:
+                    # Spara kommentar i session state
+                    ny_kommentar = {
+                        'datum': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        'författare': författare,
+                        'månad': vald_manad_namn,
+                        'kommentar': kommentar,
+                        'enhet': enhet_info['enhet_namn'],
+                        'enhet_kst': vald_enhet_kst
+                    }
+                    st.session_state.vec_comments.append(ny_kommentar)
+                    st.success(f"✅ Kommentar sparad för {enhet_info['enhet_namn']}!")
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
