@@ -314,6 +314,10 @@ def load_all_kpi_for_enhet(kst: str, manad_str: str, base_path=None) -> Dict[str
     mappings = load_org_mappings(base_path)
     enhet_namn = mappings['kst_to_enhet'].get(kst)
 
+    # SPECIALFALL: City VC (4020) heter "City" i KPI-fliken, inte "City VC"
+    if kst == '4020':
+        enhet_namn = 'City'
+
     if not enhet_namn:
         return {'listning': None, 'acg_casemix': None, 'teambesok': None, 'rehab_poang': None}
 
@@ -384,7 +388,11 @@ def load_all_kpi_for_enhet(kst: str, manad_str: str, base_path=None) -> Dict[str
     # Bestäm om det är VC eller Rehab baserat på KST
     try:
         kst_num = int(kst)
-        is_rehab = kst_num >= 600
+        # SPECIALFALL: KST 4020 (City VC) och 4001 (City Spec) är VC, inte Rehab
+        if kst in ['4020', '4001']:
+            is_rehab = False
+        else:
+            is_rehab = kst_num >= 600
     except ValueError:
         # Om KST inte är nummer (t.ex. kombinerade), gissa baserat på namn
         is_rehab = 'rehab' in mappings['kst_to_full_name'].get(kst, '').lower()
