@@ -401,12 +401,25 @@ def load_all_kpi_for_enhet(kst: str, manad_str: str, base_path=None) -> Dict[str
     # Läs rätt KPIer baserat på enhet-typ
     if is_rehab:
         # Rehab-enheter: TeamBesök + Rehab Poäng
-        return {
-            'listning': None,
-            'acg_casemix': None,
-            'teambesok': load_kpi_from_info('Teambesök / VGR', enhet_namn, manad_str, base_path),
-            'rehab_poang': load_kpi_from_info('Rehab Poäng', enhet_namn, manad_str, base_path)
-        }
+        # UPPDATERAD 2026-05-05: Läser nu från Poänguppföljning Rehab 2026.xlsx
+        try:
+            from rehab_poang_loader_new import load_rehab_kpi_from_poang_file
+            rehab_data = load_rehab_kpi_from_poang_file(enhet_namn, manad_str, base_path)
+            return {
+                'listning': None,
+                'acg_casemix': None,
+                'teambesok': rehab_data.get('teambesok'),
+                'rehab_poang': rehab_data.get('rehab_poang')
+            }
+        except Exception as e:
+            print(f"Fel vid läsning från Poänguppföljning Rehab 2026 för {enhet_namn}: {e}")
+            # Fallback: Försök läsa från INFO.xlsx KPI-flik (gammal metod)
+            return {
+                'listning': None,
+                'acg_casemix': None,
+                'teambesok': load_kpi_from_info('Teambesök / VGR', enhet_namn, manad_str, base_path),
+                'rehab_poang': load_kpi_from_info('Rehab Poäng', enhet_namn, manad_str, base_path)
+            }
     else:
         # VC-enheter: Listning + ACG Casemix
         return {

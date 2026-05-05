@@ -28,8 +28,9 @@ try:
     from data_loader_functions import load_all_data_for_enhet
     from rehab_poang_loader import load_rehab_poang_och_top_performers
     from info_loader import build_enheter_data
+    from rehab_total_loader import load_rehab_poang_total
 except ImportError as e:
-    st.error(f"Kunde inte importera data_loader_functions, rehab_poang_loader eller info_loader: {e}")
+    st.error(f"Kunde inte importera data_loader_functions, rehab_poang_loader, info_loader eller rehab_total_loader: {e}")
     st.stop()
 
 # Konfiguration
@@ -80,6 +81,46 @@ st.markdown("""
 # ========================================
 # DATAINLÄSNING FRÅN EXCEL-FILER
 # ========================================
+
+def load_rehab_poang_total_inline(manad_str):
+    """
+    Läser TOTAL Rehab Poäng från Dashboard rad 29 i Poänguppföljning Rehab 2026.xlsx
+    UPPDATERAD 2026-05-05: Enligt Ezzats instruktion - hämta total från cell D29 för mars
+    """
+    import pandas as pd
+    import os
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, 'Poänguppföljning Rehab 2026.xlsx')
+
+    if not os.path.exists(file_path):
+        return {'actual': 0, 'budget': 0}
+
+    try:
+        df = pd.read_excel(file_path, sheet_name='Dashboard', header=None)
+
+        # Rad 29 (index 28) = "TOTALT ALLA ENHETER"
+        total_row_idx = 28
+
+        # Månadskolumner: Jan=1, Feb=2, Mar=3, Apr=4, etc.
+        manad_mapping = {
+            '2026-01': 1, '2026-02': 2, '2026-03': 3, '2026-04': 4,
+            '2026-05': 5, '2026-06': 6, '2026-07': 7, '2026-08': 8,
+            '2026-09': 9, '2026-10': 10, '2026-11': 11, '2026-12': 12
+        }
+
+        manad_col_idx = manad_mapping.get(manad_str)
+        if manad_col_idx is None:
+            return {'actual': 0, 'budget': 0}
+
+        total_value = df.iloc[total_row_idx, manad_col_idx]
+        actual_value = float(total_value) if pd.notna(total_value) else 0
+
+        return {'actual': actual_value, 'budget': 0}
+
+    except Exception as e:
+        print(f"FEL load_rehab_poang_total_inline: {e}")
+        return {'actual': 0, 'budget': 0}
 
 @st.cache_data(ttl=60)  # 1 minut cache för snabbare uppdateringar
 def load_rehab_intakter_from_pl(enhet_kst, manad_str):
@@ -484,12 +525,34 @@ def get_vgr_totals(manad):
 
             # Rehab Poäng (bara Rehab-enheter)
             if enhet_typ == 'Rehab':
-                totals['total_rehab_poang']['actual'] += data.get('rehab_poang_actual', 0)
-                totals['total_rehab_poang']['budget'] += data.get('rehab_poang_budget', 0)
+                rp_actual = data.get('rehab_poang_actual', 0)
+                rp_budget = data.get('rehab_poang_budget', 0)
+                # DEBUG: Print for att se om data finns
+                if rp_actual > 0:
+                    print(f"DEBUG: {kst} {ENHETER_DATA[kst]['enhet_namn']}: Rehab Poang = {rp_actual}")
+                totals['total_rehab_poang']['actual'] += rp_actual
+                totals['total_rehab_poang']['budget'] += rp_budget
 
         except Exception as e:
             # Om en enhet misslyckas, fortsätt med nästa
+            print(f"DEBUG ERROR: Fel for {kst}: {e}")
             continue
+
+    # UPPDATERAD 2026-05-05: Hämta Rehab Poäng TOTALSUMMA från Dashboard rad 29
+    # istället för att summera individuella enheter (enligt Ezzats instruktion)
+    try:
+        rehab_total = load_rehab_poang_total_inline(manad)
+        totals['total_rehab_poang']['actual'] = rehab_total['actual']
+        print(f"DEBUG SUCCESS: Hamtade Rehab Poang total fran Dashboard rad 29: {rehab_total['actual']:.0f}")
+    except Exception as e:
+        print(f"DEBUG ERROR: Kunde inte hamta Rehab Poang total fran Dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        # Fallback: använd summerad data (stannar kvar på det som redan finns)
+        pass
+
+    # DEBUG: Print totalsumma
+    print(f"\nDEBUG TOTAL: Rehab Poang = {totals['total_rehab_poang']['actual']:.0f} (Budget: {totals['total_rehab_poang']['budget']:.0f})\n")
 
     return totals
 

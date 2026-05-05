@@ -728,33 +728,9 @@ def load_all_data_for_enhet(enhet_kst, manad_str, base_path=None):
         data['teambesok_actual'] = 0
         data['rehab_poang_actual'] = 0
 
-    # OVERRIDE: För Rehab-enheter, hämta poäng från Poänguppföljning Rehab 2026.xlsx
-    # (INFO.xlsx har inte komplett data för alla 16 Rehab-enheter)
-    if load_rehab_poang_och_top_performers:
-        # Identifiera Rehab-enheter (KST >= 600, eller kombinerade enheter)
-        try:
-            kst_num = int(enhet_kst)
-            is_rehab = kst_num >= 600
-        except ValueError:
-            # Kombinerade enheter som '650-670' är också Rehab
-            is_rehab = True
-
-        if is_rehab:
-            # VIKTIGT: För kombinerade enheter (650/670, 703/713), räkna BARA primära KST
-            # Icke-primära returnerar 0 för att undvika dubbelräkning i totalsummor
-            NON_PRIMARY_KST = ['650', '703']  # Dessa delar poäng med 670 resp. 713
-
-            if enhet_kst in NON_PRIMARY_KST:
-                # Icke-primär enhet: sätt till 0 för att undvika dubbelräkning
-                data['rehab_poang_actual'] = 0
-            else:
-                # Primär eller fristående enhet: läs från Poänguppföljning
-                try:
-                    rehab_data = load_rehab_poang_och_top_performers(enhet_kst, manad_str)
-                    data['rehab_poang_actual'] = int(rehab_data['total_poang'])
-                except Exception as e:
-                    # Om det misslyckas, behåll INFO-data (fallback)
-                    pass
+    # UPPDATERAD 2026-05-05: Rehab Poäng hämtas nu från Poänguppföljning Rehab 2026.xlsx
+    # via info_loader.py (rad 694-702), så ingen OVERRIDE behövs längre.
+    # Data läses från Dashboard-fliken enligt Inställningar.xlsx
 
     # Hämta budget-data för ALLA enheter (både VC och Rehab)
     try:
