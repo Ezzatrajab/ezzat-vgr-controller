@@ -81,7 +81,19 @@ def get_enhet_folder_name(kst: str, base_path=None) -> str:
     - 108 (Åby) + 109 (Kållered) → 'Åby-Kållered'
     - 302 (Avenyn) + 303 (Lorensberg) → 'Avenyn-Lorensberg'
     - 650 (Fjällbacka Rehab) + 670 (Tanum Rehab) → 'Tanum- Fjällbacka Rehab'
+
+    KST-ALIAS - Nya KST → Gamla mappnamn (UPPDATERAD 2026-09-17):
+    - 003 (Torpa nytt KST) → 'Torpa' (gammalt mappnamn)
     """
+    # KST-ALIAS: Nya KST som pekar till gamla mappnamn
+    KST_ALIAS = {
+        '003': 'Torpa',  # Nytt KST för Torpa VC
+    }
+
+    # Kolla först om detta är ett alias
+    if kst in KST_ALIAS:
+        return KST_ALIAS[kst]
+
     # SPECIALFALL: Kombinerade enheter (har gemensam data-mapp)
     KOMBINERADE_ENHETER = {
         '108': 'Åby-Kållered',
