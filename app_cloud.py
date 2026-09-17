@@ -33,6 +33,14 @@ except ImportError as e:
     st.error(f"Kunde inte importera data_loader_functions, rehab_poang_loader, info_loader eller rehab_total_loader: {e}")
     st.stop()
 
+# SQL Data Loader (PowerShell-baserad) - NYTT 2026-09-17
+try:
+    from sql_data_loader_ps import load_finance_data_ps, get_enhet_data_sql
+    SQL_AVAILABLE = True
+except ImportError:
+    SQL_AVAILABLE = False
+    st.warning("⚠️ SQL Data Loader inte tillgänglig - använder Excel-filer")
+
 # Konfiguration
 st.set_page_config(
     page_title="Ezzat's Controlling System",
@@ -358,11 +366,71 @@ def uppdatera_rehab_data():
 # HÄMTA AKTUELL DATA (DIREKT FRÅN FILER)
 # ========================================
 
+def get_current_data_sql(enhet_kst, manad):
+    """
+    Hämtar data från SQL Database (DMFinance) istället för Excel
+    NYTT: 2026-09-17 - SQL Integration
+    """
+    try:
+        # Parse månad till år och månads-nummer
+        year, month = map(int, manad.split('-'))
+
+        # Hämta data från SQL
+        sql_data = get_enhet_data_sql(enhet_kst, year=year, month=month)
+
+        if sql_data is None:
+            st.warning(f"Ingen SQL-data för KST {enhet_kst}, månad {manad}")
+            return {}
+
+        # Konvertera SQL-data till samma format som Excel-loader
+        base_data = {}
+
+        # FTE och Personalkostnad från SQL (Actual, Budget, Forecast)
+        base_data['fte'] = {
+            'actual': 0,  # Behöver beräknas från HR-data
+            'budget': 0
+        }
+
+        base_data['personalkostnad'] = {
+            'actual': sql_data.get('actual', {}).get('personal_kostnad', 0),
+            'budget': sql_data.get('budget', {}).get('personal_kostnad', 0)
+        }
+
+        # Intäkter och kostnader
+        base_data['intakter_totalt'] = {
+            'actual': sql_data.get('actual', {}).get('intakter', 0),
+            'budget': sql_data.get('budget', {}).get('intakter', 0)
+        }
+
+        base_data['resultat'] = {
+            'actual': sql_data.get('actual', {}).get('resultat', 0),
+            'budget': sql_data.get('budget', {}).get('resultat', 0)
+        }
+
+        # Listning och ACG (för VC-enheter)
+        base_data['listning'] = {'actual': 0, 'budget': 0}
+        base_data['acg_casemix'] = {'actual': 0, 'budget': 0}
+
+        # Rehab-data (för Rehab-enheter)
+        base_data['rehab_poang_actual'] = 0
+        base_data['teambesok'] = 0
+
+        return base_data
+
+    except Exception as e:
+        st.error(f"Fel vid SQL-hämtning för {enhet_kst}: {e}")
+        return {}
+
 def get_current_data(enhet_kst, manad):
     """
     Hämtar aktuell data för en enhet och månad.
     Läser ALLA data från riktiga Excel-filer (ingen hårdkodad data).
+
+    UPPDATERAD 2026-09-17: Stödjer både Excel och SQL (DMFinance)
     """
+    # Kolla om SQL är aktiverad
+    if st.session_state.get('use_sql', False) and SQL_AVAILABLE:
+        return get_current_data_sql(enhet_kst, manad)
     # Börja med data från ENHETER_DATA (för enhet_namn, typ, vec, region)
     # Men ersätt alla numeriska värden med riktiga data
     if enhet_kst in ENHETER_DATA and manad in ENHETER_DATA[enhet_kst]['månader']:
@@ -925,6 +993,26 @@ def main():
         st.cache_data.clear()
         st.sidebar.success("Cache rensad! Laddar om...")
 
+    # SQL Toggle - NYTT 2026-09-17
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔌 Datakälla")
+    if SQL_AVAILABLE:
+        use_sql = st.sidebar.checkbox(
+            "Använd SQL Database (DMFinance)",
+            value=st.session_state.get('use_sql', False),
+            help="Hämta data direkt från DMFinance SQL istället för Excel-filer"
+        )
+        st.session_state.use_sql = use_sql
+
+        if use_sql:
+            st.sidebar.success("✅ SQL Aktiv (DMFinance)")
+        else:
+            st.sidebar.info("📁 Excel-filer")
+    else:
+        st.sidebar.info("📁 Excel-filer (SQL ej tillgänglig)")
+        st.session_state.use_sql = False
+
+    st.sidebar.markdown("---")
     if st.sidebar.button("🚪 Logga ut"):
         st.session_state.authenticated = False
         st.rerun()
