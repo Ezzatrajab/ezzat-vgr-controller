@@ -943,8 +943,6 @@ def main():
     # Månadsväljare
     st.sidebar.markdown("### 📅 Välj Period")
     manader = {
-        "September 2026": "2026-09",
-        "Augusti 2026": "2026-08",
         "Juli 2026": "2026-07",
         "Juni 2026": "2026-06",
         "Maj 2026": "2026-05",
